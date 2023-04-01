@@ -8,45 +8,45 @@ def fix_general_label_error(labels, type, slots, ontology_version=""):
         "mutliple sports":"multiple sports","sports":"multiple sports","swimmingpool":"swimming pool", 
         "concerthall":"concert hall", "concert":"concert hall", "pool":"swimming pool", "night club":"nightclub", "mus":"museum", 
         "colleges":"college", "coll":"college","architectural":"architecture", "musuem":"museum", "churches":"church",
-        
+
         # area
         "center":"centre", "center of town":"centre", "near city center":"centre", "in the north":"north", 
         "cen":"centre", "east side":"east","east area":"east", "west part of town":"west", "ce":"centre",  
         "town center":"centre", "centre of cambridge":"centre", 
         "city center":"centre", "the south":"south", "scentre":"centre", "town centre":"centre", "in town":"centre", 
         "north part of town":"north", "centre of town":"centre", "cb30aq": "none",
-        
+
         # price
         "mode":"moderate", "moderate -ly": "moderate", "mo":"moderate", 
-        
+
         # day
         "monda": "monday", 
-        
+
         # parking
         "free parking":"free",
-        
+
         # internet
         "free internet":"yes",
-        
+
         # star
         "4 star":"4", "4 stars":"4", "0 star rarting":"none",
-        
+
         # others 
         "y":"yes", "any":"do n't care", "does not care":"do n't care", "not men":"none", "not":"none", 
         "not mentioned":"none", '':"none", "not mendtioned":"none", "3 .":"3", "does not":"no", "fun":"none",  
     }
 
     for slot in slots:
-        if slot in label_dict.keys():
+        if slot in label_dict:
             
             # general typos
-            if label_dict[slot] in GENERAL_TYPO.keys():
+            if label_dict[slot] in GENERAL_TYPO:
                 label_dict[slot] = label_dict[slot].replace(label_dict[slot], GENERAL_TYPO[label_dict[slot]])
-            
+
             # do not care
             if label_dict[slot] in ["doesn't care", "don't care", "dont care", "does not care", "do not care", "dontcare"]:
                 label_dict[slot] = "do n't care"
-            
+
             # miss match slot and value 
             if  slot == "hotel-type" and label_dict[slot] in ["nigh", "moderate -ly priced", "bed and breakfast", "centre", "venetian", "intern", "a cheap -er hotel"]:
                 label_dict[slot] = "none"
@@ -72,19 +72,19 @@ def fix_general_label_error(labels, type, slots, ontology_version=""):
                     label_dict[slot] = "west"
                 elif label_dict[slot] == "cent": 
                     label_dict[slot] = "centre"
-            
+
             if "day" in slot:
                 if label_dict[slot] == "we": 
                     label_dict[slot] = "wednesday"
                 elif label_dict[slot] == "no":
                     label_dict[slot] = "none"
-            
+
             if "price" in slot and label_dict[slot] == "ch":
                 label_dict[slot] = "cheap"
             if "internet" in slot and label_dict[slot] == "free":
                 label_dict[slot] = "yes"
 
-                
+
             # Add on May, 2020
             if ontology_version in ["1.0"]:
 
@@ -165,7 +165,7 @@ def fix_general_label_error(labels, type, slots, ontology_version=""):
                     label_dict[slot] = "north american|indian"
                 if label_dict[slot] == "chiquito": 
                     label_dict[slot] = "chiquito restaurant bar"
-                    
+
 
                 # Abbreviation
                 if label_dict[slot] == "city centre north bed and breakfast": 

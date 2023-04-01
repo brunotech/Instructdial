@@ -61,7 +61,7 @@ instruction_dict = {
 
 def get_startphrase(response):
     response_words = response.split()
-    max_startwords = min(5, int(len(response_words) / 2))
+    max_startwords = min(5, len(response_words) // 2)
     if max_startwords < 1:
         return ''
     num_wordsinphrase = random.randint(1, max_startwords)
@@ -75,7 +75,7 @@ def list_tostring(classes):
     if len(classes) < 2:
         return ' '.join(classes)
     elif len(classes) == 2:
-        return classes[0] + ' and ' + classes[1]
+        return f'{classes[0]} and {classes[1]}'
     else:
         return ', '.join(classes[:-1]) + ' and ' + classes[-1]
 
@@ -133,7 +133,9 @@ class Generator(GeneratorBasic):
                 # import pdb;pdb.set_trace()
                 if type(dp['context']) is str:
                     dp['context'] = [dp['context']]
-                context = (' ' + settings.EOT_SEP + ' ').join(dp['context'][-settings.MAX_CONTEXT_NUMUTTERANCE:])
+                context = f' {settings.EOT_SEP} '.join(
+                    dp['context'][-settings.MAX_CONTEXT_NUMUTTERANCE :]
+                )
                 response = dp['response']
                 phrase = get_startphrase(response)
                 # text = "Phrase to begin the response with: "+ phrase
@@ -143,13 +145,15 @@ class Generator(GeneratorBasic):
                 #     context = '[dialogue context]: ' + context
 
                 context_str = ' '.join(context.split()[-settings.MAX_DIALOGUE_LENGTH:])
-                text = settings.INITIALPHRASE_SEP + " " + phrase + " " + settings.CONTEXT_SEP + " " + context_str + " " + settings.EOD_SEP
-                post_prompts = [settings.QUESTION_SEP + " Given this context and initial phrase, the response is",
-                                settings.QUESTION_SEP + " Generate a response with the provided context which begins with the provided initial phrase",
-                                settings.QUESTION_SEP + " Given this context generate a response which starts with the given initial sentence",
-                                settings.QUESTION_SEP + " Here is a response which starts with the given initial phrase"]
+                text = f"{settings.INITIALPHRASE_SEP} {phrase} {settings.CONTEXT_SEP} {context_str} {settings.EOD_SEP}"
+                post_prompts = [
+                    f"{settings.QUESTION_SEP} Given this context and initial phrase, the response is",
+                    f"{settings.QUESTION_SEP} Generate a response with the provided context which begins with the provided initial phrase",
+                    f"{settings.QUESTION_SEP} Given this context generate a response which starts with the given initial sentence",
+                    f"{settings.QUESTION_SEP} Here is a response which starts with the given initial phrase",
+                ]
 
-                text = text + ' ' + random.choice(post_prompts)
+                text = f'{text} {random.choice(post_prompts)}'
                 text = re.sub(' +', ' ', text)
                 output = response
                 sequences.append({'text': text, 'output': output, 'index': index,

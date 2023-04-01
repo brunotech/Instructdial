@@ -20,8 +20,8 @@ def update_belief_state(usr_dict, prev_bs_dict, prev_bs_name_list):
         res_dx_text = '[restaurant] '
         for name in res_bs_name_list:
             value = res_bs_dict[name]
-            res_text += name + ' ' + value + ' '
-            res_dx_text += name + ' '
+            res_text += f'{name} {value} '
+            res_dx_text += f'{name} '
         res_text = res_text.strip().strip(' , ').strip()
         res_dx_text = res_dx_text.strip().strip(' , ').strip()
     return res_text, res_dx_text, res_bs_dict, res_bs_name_list
@@ -32,12 +32,10 @@ def zip_sess_list(sess_list):
     assert sess_list[0]["system_transcript"] == ''
     if turn_num == 1:
         raise Exception()
-    turn_list = []
-    for idx in range(turn_num - 1):
-        curr_turn_dict = sess_list[idx]
-        system_uttr = sess_list[idx + 1]['system_transcript']
-        turn_list.append((curr_turn_dict, system_uttr))
-    return turn_list
+    return [
+        (sess_list[idx], sess_list[idx + 1]['system_transcript'])
+        for idx in range(turn_num - 1)
+    ]
 
 
 def process_session(sess_list):
@@ -56,22 +54,23 @@ def process_session(sess_list):
         one_usr_bs, one_usr_bsdx, bs_dict, bs_name_list = \
             update_belief_state(one_usr_dict, bs_dict, bs_name_list)
 
-        one_turn_dict = {'turn_num': idx}
-
         context.append(one_usr_uttr)
 
-        one_turn_dict['context'] = context[:]
-        one_turn_dict['user'] = one_usr_uttr
-        one_turn_dict['response'] = one_system_uttr
-        one_turn_dict['turn_domain'] = ['[restaurant]']
-        one_turn_dict['state'] = one_usr_bs
-        one_turn_dict['bsdx'] = one_usr_bsdx
-        one_turn_dict['aspn'] = ''
+        one_turn_dict = {
+            'turn_num': idx,
+            'context': context[:],
+            'user': one_usr_uttr,
+            'response': one_system_uttr,
+            'turn_domain': ['[restaurant]'],
+            'state': one_usr_bs,
+            'bsdx': one_usr_bsdx,
+            'aspn': '',
+        }
         examples.append(one_turn_dict)
 
         context.append(one_system_uttr)
 
-        # res_dict['dialogue_session'].append(one_turn_dict)
+            # res_dict['dialogue_session'].append(one_turn_dict)
 
     return examples
 
@@ -97,11 +96,11 @@ class WozDstDataset(Dataset):
         self.examples = []
 
         if split == 'train':
-            train_list = process_file(data_path + '/woz_train_en.json')
-            test_list = process_file(data_path + '/woz_test_en.json')
+            train_list = process_file(f'{data_path}/woz_train_en.json')
+            test_list = process_file(f'{data_path}/woz_test_en.json')
             self.examples = train_list + test_list
         else:
-            self.examples = process_file(data_path + '/woz_validate_en.json')
+            self.examples = process_file(f'{data_path}/woz_validate_en.json')
 
 """
 if __name__ == '__main__':

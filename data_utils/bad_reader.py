@@ -9,8 +9,7 @@ class BadDataset(Dataset):
         self.idx = 0
         self.examples = []
 
-        with open(os.path.join(data_path, 'bot_adversarial_dialogue', 'dialogue_datasets',
-                               'bot_adversarial_dialogue_datasets_with_persona', split + '.txt')) as f:
+        with open(os.path.join(data_path, 'bot_adversarial_dialogue', 'dialogue_datasets', 'bot_adversarial_dialogue_datasets_with_persona', f'{split}.txt')) as f:
             lines = [l.rstrip() for l in f.readlines()]
 
         for l in lines:

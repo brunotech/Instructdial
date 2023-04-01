@@ -35,19 +35,20 @@ class SnipsDataset(Dataset):
 
                     for slot in slots_data:
                         if len(slot['value']) > 0:
-                            query_slots = query_slots.replace(slot['value'],
-                                                              'SLOT_{}_{}'.format(len(slot['value'].split()),
-                                                                                  slot['name']))
+                            query_slots = query_slots.replace(
+                                slot['value'],
+                                f"SLOT_{len(slot['value'].split())}_{slot['name']}",
+                            )
 
                     slots = []
                     for w in query_slots.split():
                         if w.startswith('SLOT_'):
                             m = re.match(r'SLOT_([0-9]+)_(.*)', w)
-                            n, field = m.group(1), m.group(2)
-                            slots.append('B-{}'.format(field))
-                            for i in range(int(n) - 1):
-                                slots.append('I-{}'.format(field))
-                                self.slot_classes.add('I-{}'.format(field))
+                            n, field = m[1], m[2]
+                            slots.append(f'B-{field}')
+                            for _ in range(int(n) - 1):
+                                slots.append(f'I-{field}')
+                                self.slot_classes.add(f'I-{field}')
                         else:
                             slots.append('O')
 

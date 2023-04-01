@@ -46,11 +46,13 @@ instruction_dict = {
     ]
 }
 
-post_prompts = [settings.QUESTION_SEP + " Generate an appropriate answer",
-                settings.QUESTION_SEP + " The answer to this dialog should be?",
-                settings.QUESTION_SEP + " What is an appropriate answer to the dialog?",
-                settings.QUESTION_SEP + " A helpful answer is ",
-                settings.QUESTION_SEP + " What is a good answer to the question?"]
+post_prompts = [
+    f"{settings.QUESTION_SEP} Generate an appropriate answer",
+    f"{settings.QUESTION_SEP} The answer to this dialog should be?",
+    f"{settings.QUESTION_SEP} What is an appropriate answer to the dialog?",
+    f"{settings.QUESTION_SEP} A helpful answer is ",
+    f"{settings.QUESTION_SEP} What is a good answer to the question?",
+]
 
 
 class Generator(GeneratorBasic):
@@ -93,8 +95,7 @@ class Generator(GeneratorBasic):
             print(datapoints[0])
             print(len(datapoints), 'datapoints')
 
-            idx = 0
-            for dp in tqdm(datapoints):
+            for idx, dp in enumerate(tqdm(datapoints)):
                 text = ''
 
                 context, answer = dp['context'], dp['answer']
@@ -110,7 +111,7 @@ class Generator(GeneratorBasic):
                 else:
                     text = f"{settings.CONTEXT_SEP} {context_str} {settings.EOD_SEP}"
 
-                text = text + ' ' + random.choice(post_prompts)
+                text = f'{text} {random.choice(post_prompts)}'
 
                 output = answer
                 text = re.sub(' +', ' ', text)
@@ -122,7 +123,6 @@ class Generator(GeneratorBasic):
                                   'metadata': {'context':dp['context']},
                                   'index': idx, 'split': dp['split'], 'dataset': dataset_reader.name})
 
-                idx += 1
             print(sequences[-2:])
 
         return (sequences, instruction_dict)

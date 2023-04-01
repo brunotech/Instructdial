@@ -9,18 +9,18 @@ class BC3Dataset(Dataset):
         for thread in root:
             mails = []
             for elem in thread:
-                if elem.tag == 'name':
-                    title = elem.text
-                elif elem.tag == 'listno':
-                    tag = elem.text
-                elif elem.tag == 'DOC':
+                if elem.tag == 'DOC':
                     for mail_elem in elem:
                         if mail_elem.tag == 'Subject':
                             subject = mail_elem.text
                         elif mail_elem.tag == 'Text':
                             texts = [x.text for x in mail_elem]
                     mails.append({'subject': subject, 'content': texts})
-            
+
+                elif elem.tag == 'listno':
+                    tag = elem.text
+                elif elem.tag == 'name':
+                    title = elem.text
             data[tag] = {
                 'tag': tag,
                 'title': title,
@@ -44,8 +44,8 @@ class BC3Dataset(Dataset):
                             labels.append([x.text for x in annotation])
             data[tag]['summary'] = texts
             data[tag]['labels'] = labels
-        self.examples = [x for x in data.values()]
-        
+        self.examples = list(data.values())
+
         num_eval = len(self.examples) // 10
         self.split = split
 

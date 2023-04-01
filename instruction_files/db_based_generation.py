@@ -80,11 +80,15 @@ class Generator(GeneratorBasic):
                 index = dp.get('index', -1)
                 split = dp.get('split', 'unspecified')
 
-                context = (' ' + settings.EOT_SEP + ' ').join(dp['context'][-self.context_max_length:])
+                context = f' {settings.EOT_SEP} '.join(
+                    dp['context'][-self.context_max_length :]
+                )
                 context_str = ' '.join(context.split()[-settings.MAX_DIALOGUE_LENGTH:])
 
-                post_prompts = [settings.QUESTION_SEP + " Given the information about dialog the response is ",
-                                settings.QUESTION_SEP + " The response is "]
+                post_prompts = [
+                    f"{settings.QUESTION_SEP} Given the information about dialog the response is ",
+                    f"{settings.QUESTION_SEP} The response is ",
+                ]
                 # text = settings.STATE_SEP + " " + dp['state'] + " " + \
                 #        settings.DB_SEP + " " + dp['db'] + " " + \
                 #        settings.CONTEXT_SEP + " " + context_str + " " + settings.EOT_SEP + " " + \
@@ -100,14 +104,14 @@ class Generator(GeneratorBasic):
                             if detailitem[0]=="none":
                                 action_string+='no detail'
                             else:
-                                action_string += detailitem[0] + ' is '+ detailitem[1] + ', '
+                                action_string += f'{detailitem[0]} is {detailitem[1]}, '
                         action_string+='.'
                 else:
                     action_string = 'no annotation'
                 action_string = action_string.replace(', .', '.')
- 
+
                 text = settings.ACT_SEP  + action_string+ " " +   settings.CONTEXT_SEP + " " + context_str + " " + settings.EOT_SEP + " " + \
-                       random.choice(post_prompts)
+                           random.choice(post_prompts)
 
                 output = dp['response']
                 text = re.sub(' +', ' ', text)

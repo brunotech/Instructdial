@@ -25,8 +25,7 @@ LOGGER = logging.getLogger(__name__)
 def get_json_lines(inp_file):
     lines = []
     with jsonlines.open(inp_file) as reader:
-        for obj in reader:
-            lines.append(obj)
+        lines.extend(iter(reader))
     return lines
 
 

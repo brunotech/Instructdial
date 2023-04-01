@@ -109,7 +109,7 @@ class Generator(GeneratorBasic):
                 assert type(acts) is list
                 single_act_selected = random.choice(acts)
                 classes = dataset_reader.act_classes
-                set_notused = set(acts)-set([single_act_selected])
+                set_notused = set(acts) - {single_act_selected}
                 classes = list(set(classes)-set_notused)
                 classes_list = [str(i) for i in range(len(classes))]
                 mapped_instruction = get_integerwithoptions_string(classes)
@@ -118,17 +118,29 @@ class Generator(GeneratorBasic):
                 output = answer_idx
                 all_outputs = [str(output)]
 
-                    # import pdb;pdb.set_trace()
-                context = (' ' + settings.EOT_SEP + ' ').join(dp['context'][-self.context_max_length:])
+                context = f' {settings.EOT_SEP} '.join(
+                    dp['context'][-self.context_max_length :]
+                )
                 context_str = ' '.join(context.split()[-settings.MAX_DIALOGUE_LENGTH:])
 
-                post_prompts = [settings.QUESTION_SEP + " The dialog act of the response is ",
-                                settings.QUESTION_SEP + " The correct dialog act of the response is ",
-                                settings.QUESTION_SEP + " The best option is ", ]
+                post_prompts = [
+                    f"{settings.QUESTION_SEP} The dialog act of the response is ",
+                    f"{settings.QUESTION_SEP} The correct dialog act of the response is ",
+                    f"{settings.QUESTION_SEP} The best option is ",
+                ]
 
-                text = settings.CONTEXT_SEP + " " + context_str+ ' '+settings.RESPONSE_SEP + f" {dp['response']} "  + settings.EOD_SEP \
-                       +' '+ mapped_instruction \
-                       + " " + random.choice(post_prompts)
+                text = (
+                    (
+                        (
+                            f"{settings.CONTEXT_SEP} {context_str} {settings.RESPONSE_SEP}"
+                            + f" {dp['response']} "
+                            + settings.EOD_SEP
+                            + ' '
+                        )
+                        + mapped_instruction
+                    )
+                    + " "
+                ) + random.choice(post_prompts)
 
                 text = re.sub(' +', ' ', text)
                 sequences.append(

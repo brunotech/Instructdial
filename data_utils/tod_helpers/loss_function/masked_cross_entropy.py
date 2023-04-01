@@ -22,8 +22,7 @@ def cross_entropy(logits, target):
     batch_size = logits.size(0)
     log_probs_flat = functional.log_softmax(logits)
     losses_flat = -torch.gather(log_probs_flat, dim=1, index=target)
-    loss = losses_flat.sum() / batch_size
-    return loss
+    return losses_flat.sum() / batch_size
 
 def masked_cross_entropy(logits, target, length):
     """
@@ -56,10 +55,9 @@ def masked_cross_entropy(logits, target, length):
     # losses: (batch, max_len)
     losses = losses_flat.view(*target.size())
     # mask: (batch, max_len)
-    mask = sequence_mask(sequence_length=length, max_len=target.size(1)) 
+    mask = sequence_mask(sequence_length=length, max_len=target.size(1))
     losses = losses * mask.float()
-    loss = losses.sum() / length.float().sum()
-    return loss
+    return losses.sum() / length.float().sum()
 
 def masked_binary_cross_entropy(logits, target, length):
     '''
@@ -97,22 +95,20 @@ def masked_cross_entropy_(logits, target, length, take_log=False):
     # losses: (batch, max_len)
     losses = losses_flat.view(*target.size())
     # mask: (batch, max_len)
-    mask = sequence_mask(sequence_length=length, max_len=target.size(1)) 
+    mask = sequence_mask(sequence_length=length, max_len=target.size(1))
     losses = losses * mask.float()
-    loss = losses.sum() / length.float().sum()
-    return loss
+    return losses.sum() / length.float().sum()
 
 def masked_coverage_loss(coverage, attention, length):
     if USE_CUDA:
         length = Variable(torch.LongTensor(length)).cuda()
     else:
-        length = Variable(torch.LongTensor(length))    
-    mask = sequence_mask(sequence_length=length) 
+        length = Variable(torch.LongTensor(length))
+    mask = sequence_mask(sequence_length=length)
     min_ = torch.min(coverage, attention)
     mask = mask.unsqueeze(2).expand_as(min_)
     min_ = min_ * mask.float()
-    loss = min_.sum() / (len(length)*1.0)
-    return loss
+    return min_.sum() / (len(length)*1.0)
 
 def masked_cross_entropy_for_slot(logits, target, mask, use_softmax=True):
     # print("logits", logits)
@@ -129,9 +125,7 @@ def masked_cross_entropy_for_slot(logits, target, mask, use_softmax=True):
     losses_flat = -torch.gather(log_probs_flat, dim=1, index=target_flat)
     losses = losses_flat.view(*target.size()) # b * |s|
     losses = losses * mask.float()
-    loss = losses.sum() / (losses.size(0)*losses.size(1))
-    # print("loss inside", loss)
-    return loss
+    return losses.sum() / (losses.size(0)*losses.size(1))
 
 def masked_cross_entropy_for_value(logits, target, mask):
     # logits: b * |s| * m * |v|
@@ -145,8 +139,7 @@ def masked_cross_entropy_for_value(logits, target, mask):
     # print("target_flat", target_flat)
     losses_flat = -torch.gather(log_probs_flat, dim=1, index=target_flat)
     losses = losses_flat.view(*target.size()) # b * |s| * m
-    loss = masking(losses, mask)
-    return loss
+    return masking(losses, mask)
 
 def masking(losses, mask):
     mask_ = []
@@ -164,8 +157,7 @@ def masking(losses, mask):
     if losses.is_cuda:
         mask_ = mask_.cuda()
     losses = losses * mask_.float()
-    loss = losses.sum() / (mask_.sum().float())
-    return loss
+    return losses.sum() / (mask_.sum().float())
 
 
 

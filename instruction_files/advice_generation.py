@@ -15,24 +15,21 @@ random.seed(123)
 
 instruction_dict = {
     "id": "advice_generation",
-    "Source": [
-        "self"
-    ],
+    "Source": ["self"],
     "Definitions": [
         "In this task you will be shown a text which contains an issue or concern and you need to generate a response that provides advice to resolve the issue.",
         "In this task you will be given a text that raises a issue. Generate a response that gives advice to solve the issue.",
-        "In this task you will be given a text which raises a concern. You need to provide a response which resolves the issue."],
+        "In this task you will be given a text which raises a concern. You need to provide a response which resolves the issue.",
+    ],
     "Positive Examples": [
         {
-            "text": settings.CONTEXT_SEP + " Anyone take mental health days from work?. Do you use vacation, PTO, sick, FMLA? " +
-                    settings.EOD_SEP + " " +
-                    settings.QUESTION_SEP + " The response is ",
+            "text": f"{settings.CONTEXT_SEP} Anyone take mental health days from work?. Do you use vacation, PTO, sick, FMLA? {settings.EOD_SEP} {settings.QUESTION_SEP} The response is ",
             "output": 'Back at my old job, I used sick leave.',
             "index": 1,
             "split": "train",
-            "dataset": "advice"
+            "dataset": "advice",
         }
-    ]
+    ],
 }
 
 
@@ -86,17 +83,20 @@ class Generator(GeneratorBasic):
                 index = dp.get('index', -1)
                 split = dp.get('split', 'unspecified')
 
-                context = (' ' + settings.EOT_SEP + ' ').join(dp['context'][-self.context_max_length:])
+                context = f' {settings.EOT_SEP} '.join(
+                    dp['context'][-self.context_max_length :]
+                )
                 context_str = ' '.join(context.split()[-settings.MAX_DIALOGUE_LENGTH:])
 
-                post_prompts = [settings.QUESTION_SEP + " The response is ",
-                                settings.QUESTION_SEP + " Given the context an appropriate response is ",
-                                settings.QUESTION_SEP + " A good response which resolves the issue in the text is ",
-                                settings.QUESTION_SEP + " A helpful response is ",
-                                settings.QUESTION_SEP + " The response to this dialog should be "]
+                post_prompts = [
+                    f"{settings.QUESTION_SEP} The response is ",
+                    f"{settings.QUESTION_SEP} Given the context an appropriate response is ",
+                    f"{settings.QUESTION_SEP} A good response which resolves the issue in the text is ",
+                    f"{settings.QUESTION_SEP} A helpful response is ",
+                    f"{settings.QUESTION_SEP} The response to this dialog should be ",
+                ]
 
-                text = settings.CONTEXT_SEP + " " + context_str + " " + settings.EOD_SEP + \
-                       " " + random.choice(post_prompts)
+                text = f"{settings.CONTEXT_SEP} {context_str} {settings.EOD_SEP} {random.choice(post_prompts)}"
 
                 text = re.sub(' +', ' ', text)
 

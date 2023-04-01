@@ -10,10 +10,10 @@ class MutualDataset(Dataset):
         self.examples = []
         self.split = split
 
-        if split == 'train' or split == 'dev':
+        if split in ['train', 'dev']:
             path = Path(f'{data_path}/train')
         else: # test directory have no label so we use dev as test
-            path = Path(f'{data_path}/dev') 
+            path = Path(f'{data_path}/dev')
         for data in path.iterdir():
             with open(data) as f:
                 data = json.loads(f.readline())
@@ -23,9 +23,9 @@ class MutualDataset(Dataset):
                 data['answer'] = data['options'][option_map[data['answers']]]
                 self.examples.append(data)
 
-        if split == 'train':
-            num_examples = len(self.examples)
-            self.examples = self.examples[:-num_examples//10]
-        elif split == 'dev':
+        if split == 'dev':
             num_examples = len(self.examples)
             self.examples = self.examples[-num_examples//10:]
+        elif split == 'train':
+            num_examples = len(self.examples)
+            self.examples = self.examples[:-num_examples//10]

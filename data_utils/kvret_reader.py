@@ -26,14 +26,10 @@ def update_belief_state(prev_bs_dict, prev_slot_name_list, curr_slot_dict):
     res_bs_dict = prev_bs_dict.copy()
     res_slot_name_list = prev_slot_name_list.copy()
     for slot in curr_slot_dict:
-        if slot in res_bs_dict:  # check if the slot exists
-            res_bs_dict[slot] = curr_slot_dict[slot]  # update the slot value
-        else:
+        if slot not in res_bs_dict:
             res_slot_name_list.append(slot)
-            res_bs_dict[slot] = curr_slot_dict[slot]
-    res_list = []
-    for name in res_slot_name_list:
-        res_list.append((name, res_bs_dict[name]))
+        res_bs_dict[slot] = curr_slot_dict[slot]  # update the slot value
+    res_list = [(name, res_bs_dict[name]) for name in res_slot_name_list]
     return res_list, res_bs_dict, res_slot_name_list
 
 
@@ -55,11 +51,11 @@ def zip_turn(turn_list, prev_bs_dict, prev_slot_name_list):
 def get_bs_text(bs_list):
     if len(bs_list) == 0:  # no belief state
         return '', ''
-    bs_text, bsdx_text = domain + ' ', domain + ' '
+    bs_text, bsdx_text = f'{domain} ', f'{domain} '
     for item in bs_list:
         slot = token_map[item[0]]
-        bs_text += slot + ' ' + item[1] + ' '
-        bsdx_text += slot + ' '
+        bs_text += f'{slot} {item[1]} '
+        bsdx_text += f'{slot} '
     bs_text = ' '.join(bs_text.strip().strip(',').strip().split())
     bsdx_text = ' '.join(bsdx_text.strip().strip(',').strip().split())
     return bs_text, bsdx_text
@@ -100,17 +96,17 @@ def process_dialogue_session(session_list):
 
         bs_text, bsdx_text = get_bs_text(bs_list)
 
-        example = {'turn_num': idx}
-
         context.append(user_utterance)
 
-        example['context'] = context[:]
-        example['response'] = system_utterance
-        example['turn_domain'] = [domain]
-        example['state'] = bs_text
-        example['bsdx'] = bsdx_text
-        example['aspn'] = ''
-        example['context'] = context[:]
+        example = {
+            'turn_num': idx,
+            'response': system_utterance,
+            'turn_domain': [domain],
+            'state': bs_text,
+            'bsdx': bsdx_text,
+            'aspn': '',
+            'context': context[:],
+        }
         session.append(example)
 
         context.append(system_utterance)
@@ -153,11 +149,11 @@ class KvretDataset(Dataset):
         self.examples = []
 
         if split == 'train':
-            train_data_list = process_file(data_path + '/kvret_train_public.json')
-            dev_data_list = process_file(data_path + '/kvret_dev_public.json')
+            train_data_list = process_file(f'{data_path}/kvret_train_public.json')
+            dev_data_list = process_file(f'{data_path}/kvret_dev_public.json')
             self.examples = train_data_list + dev_data_list
         else:
-            self.examples = process_file(data_path + '/kvret_test_public.json')
+            self.examples = process_file(f'{data_path}/kvret_test_public.json')
 
 
 

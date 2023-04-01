@@ -25,8 +25,7 @@ LOGGER = logging.getLogger(__name__)
 def get_json_lines(inp_file):
     lines = []
     with jsonlines.open(inp_file) as reader:
-        for obj in reader:
-            lines.append(obj)
+        lines.extend(iter(reader))
     return lines
 
 
@@ -47,49 +46,36 @@ class TopicalChatDataset(Dataset):
 
         file_name = split
         if 'valid' in split or 'test' in split:
-            file_name = split + '_' + type_seen
+            file_name = f'{split}_{type_seen}'
         else:
             self.type_seen = ''
 
         folder = './datasets/Response-Generation-Baselines/processed_output/'
         all_src = []
         with open(folder + file_name +'.src') as csv_file:
-            # csv_reader = csv.reader(csv_file, delimiter=',')
-            line_count = 0
-            for row in csv_file:
-                all_src.append(row.strip())
-                line_count+=1
-            # print(f'Processed {line_count} lines.')
+            all_src.extend(row.strip() for row in csv_file)
+                # print(f'Processed {line_count} lines.')
         all_target = []
         with open(folder + file_name +'.tgt') as csv_file:
-            line_count = 0
-            for row in csv_file:
-                all_target.append(row.strip())
-                line_count+=1
-
+            all_target.extend(row.strip() for row in csv_file)
         all_facts = []
         with open(folder + file_name +'.fct') as csv_file:
-            line_count = 0
-            for row in csv_file:
-                all_facts.append(row.strip())
-                line_count+=1
-
+            all_facts.extend(row.strip() for row in csv_file)
         # print(len(all_src), len(all_facts), len(all_target))
         assert len(all_src) == len(all_facts) == len(all_target)
-            # print(f'Processed {line_count} lines.')
-
         combined_data = []
         for i in range(len(all_src)):
             source = all_src[i].strip().split(' _eos ')
             if len(source)>0: source[-1] = source[-1].replace(' _eos', '')
             target = all_target[i].replace('_eos', '').replace('_go', '').strip()
             fact = all_facts[i]
-            d = dict()
-            d['context'] = source
-            d['response'] = target
-            d['knowledge']= fact
-            d['idx'] = i
-            d['type_seen'] = self.type_seen
+            d = {
+                'context': source,
+                'response': target,
+                'knowledge': fact,
+                'idx': i,
+                'type_seen': self.type_seen,
+            }
             combined_data.append(d)
 
         # print('indomain data length', len(combined_data))

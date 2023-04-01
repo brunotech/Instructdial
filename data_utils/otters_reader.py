@@ -25,14 +25,13 @@ LOGGER = logging.getLogger(__name__)
 def get_json_lines(inp_file):
     lines = []
     with jsonlines.open(inp_file) as reader:
-        for obj in reader:
-            lines.append(obj)
+        lines.extend(iter(reader))
     return lines
 
 def longestSubstringFinder(S,T):
     m = len(S)
     n = len(T)
-    counter = [[0]*(n+1) for x in range(m+1)]
+    counter = [[0]*(n+1) for _ in range(m+1)]
     longest = 0
     lcs_set = set()
     for i in range(m):
@@ -41,9 +40,8 @@ def longestSubstringFinder(S,T):
                 c = counter[i][j] + 1
                 counter[i+1][j+1] = c
                 if c > longest:
-                    lcs_set = set()
                     longest = c
-                    lcs_set.add(S[i-c+1:i+1])
+                    lcs_set = {S[i - longest + 1:i+1]}
                 elif c == longest:
                     lcs_set.add(S[i-c+1:i+1])
 
@@ -63,24 +61,16 @@ class OttersDataset(Dataset):
         # split = os.path.basename(os.path.abspath(data_path))
         self.examples = []
 
-        if domain=='in_domain' or domain=='both':
+        if domain in ['in_domain', 'both']:
             folder = './datasets/OTTers/data/in_domain/'
             with open(folder + split +'/source.csv') as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=',')
-                all_data = []
-                line_count = 0
-                for row in csv_reader:
-                    all_data.append(row)
-                    line_count+=1
-                # print(f'Processed {line_count} lines.')
-            with open(folder +'/' + split +'/target.csv') as csv_file:
+                all_data = list(csv_reader)
+                        # print(f'Processed {line_count} lines.')
+            with open(f'{folder}/' + split + '/target.csv') as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=',')
-                all_target = []
-                line_count = 0
-                for row in csv_reader:
-                    all_target.append(row)
-                    line_count+=1
-                # print(f'Processed {line_count} lines.')
+                all_target = list(csv_reader)
+                        # print(f'Processed {line_count} lines.')
 
             combined_data = []
             for i in range(len(all_data)):
@@ -88,9 +78,10 @@ class OttersDataset(Dataset):
                 target = all_data[i][2]
                 target_clause = target
                 response = all_target[i][1]
-                d = dict()
-                d['target'] = target_clause
-                d['response'] = clean_target_fromresponse(response, target)
+                d = {
+                    'target': target_clause,
+                    'response': clean_target_fromresponse(response, target),
+                }
                 d['responsewithtarget']= d['response']+' ' +target
                 d['context'] = source
                 d['domain'] = 'in_domain'
@@ -99,24 +90,16 @@ class OttersDataset(Dataset):
             print('indomain data length', len(combined_data))
             self.examples+=combined_data
 
-        if domain=='out_of_domain' or domain=='both':
+        if domain in ['out_of_domain', 'both']:
             folder = './datasets/OTTers/data/out_of_domain/'
             with open(folder + split +'/source.csv') as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=',')
-                all_data = []
-                line_count = 0
-                for row in csv_reader:
-                    all_data.append(row)
-                    line_count+=1
-                # print(f'Processed {line_count} lines.')
+                all_data = list(csv_reader)
+                        # print(f'Processed {line_count} lines.')
             with open(folder +'/' + split +'/target.csv') as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=',')
-                all_target = []
-                line_count = 0
-                for row in csv_reader:
-                    all_target.append(row)
-                    line_count+=1
-                # print(f'Processed {line_count} lines.')
+                all_target = list(csv_reader)
+                        # print(f'Processed {line_count} lines.')
 
             combined_dataout = []
             for i in range(len(all_data)):
@@ -124,7 +107,7 @@ class OttersDataset(Dataset):
                 target = all_data[i][2]
                 target_clause = target
                 response = all_target[i][1]
-                d = dict()
+                d = {}
                 d['target'] = target_clause
                 d['response'] = clean_target_fromresponse(response, target)
                 # d['responsewithtarget'] = []

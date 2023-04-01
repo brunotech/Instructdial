@@ -103,7 +103,7 @@ class DailyDialogDataset(Dataset):
             utterances = [cleanup_text(x) for x in dp['utterances']]
             emotions = [EMOTIONS[int(x)] for x in dp['emotions']]
             acts = [ACTS[int(x)] for x in dp['acts']]
-            for i in range(0,len(utterances)):
+            for i in range(len(utterances)):
                 context = utterances[:i]
                 response = utterances[i]
                 emotion = emotions[i]
@@ -125,12 +125,11 @@ class EmpatheticDialoguesDataset(Dataset):
         self.datasetname = 'empathetic_dialogues'
         data = self.dataset[split]
         all_datadict= defaultdict(list)
-        for idx, dp in enumerate(data):
+        for dp in data:
             # context_data = []
             all_datadict[dp['conv_id']].append(dp)
 
-        for k in all_datadict.keys():
-            utterances = all_datadict[k]
+        for utterances in all_datadict.values():
             history = []
             for i in range(len(utterances)):
                 dp = utterances[i]
@@ -140,15 +139,14 @@ class EmpatheticDialoguesDataset(Dataset):
                 conv_prompt = dp['prompt']
                 context = ' '.join(history[:])
                 context = re.sub('  +', ' ', context.strip())
-                if len(context) > 0:
-                    if i%2==0:
-                        newdp = {'context': history[:],
-                             'response':response ,
-                             'emotions': [emotion],
-                             'utterance_id':i,
-                             'context_id': context_id,
-                             'conv_prompt':conv_prompt}
-                        self.examples.append(newdp)
+                if len(context) > 0 and i % 2 == 0:
+                    newdp = {'context': history[:],
+                         'response':response ,
+                         'emotions': [emotion],
+                         'utterance_id':i,
+                         'context_id': context_id,
+                         'conv_prompt':conv_prompt}
+                    self.examples.append(newdp)
                 history.append(response)
 
 
@@ -181,11 +179,11 @@ class Convai2Dataset(Dataset):
                 sender_class = utt['sender_class']
                 if sender_class == 'Bot':
                     profile = dp['bot_profile']
-                if sender_class == 'Human':
+                elif sender_class == 'Human':
                     profile = dp['user_profile']
                 if len(response)>10 and 'This is your profile' not in response:
                     newdp = {'context': history[:], 'personality':profile, 'user_profile':dp['user_profile'], 'bot_profile':dp['bot_profile'], 'response':response, 'sender':sender, 'sender_class':sender_class, 'utterance_id':i, 'context_id': context_id}
-                    self.examples.append(newdp)                 
+                    self.examples.append(newdp)
                 history.append(response)
 
         print('len data', len(self.examples))
@@ -212,7 +210,7 @@ class PersonachatDataset(Dataset):
         self.datasetname = 'personachat'
         data = self.dataset[split]
         all_datadict= defaultdict(list)
-        for idx, dp in enumerate(data):
+        for dp in data:
             history = dp['history']
             context_id = dp['conv_id']
             uid = dp['utterance_idx']
@@ -223,7 +221,7 @@ class PersonachatDataset(Dataset):
                 newdp = {'context': history[:], 'personality':personality, 'response':response, 'utterance_id':uid, 'context_id': context_id}
                 if return_candidates:
                     newdp['candidates'] = candidates
-                self.examples.append(newdp)                    
+                self.examples.append(newdp)
             history.append(response)
 
         print('len data', len(self.examples))
@@ -239,7 +237,7 @@ class SamsumDataset(Dataset):
         self.datasetname = 'samsum'
         data = self.dataset[split]
         all_datadict= defaultdict(list)
-        for idx, dp in enumerate(data):
+        for dp in data:
             history = dp['dialogue'].split('\r\n')
             context_id = dp['id']
             summary = dp['summary']
@@ -257,7 +255,7 @@ class TimeDialDataset(Dataset):
         self.datasetname = 'time_dial'
         data = self.dataset[split]
         all_datadict= defaultdict(list)
-        for idx, dp in enumerate(data):
+        for dp in data:
             newdp = copy.deepcopy(dp)
             history = dp['conversation']
             # context_id = dp['id']

@@ -24,8 +24,7 @@ LOGGER = logging.getLogger(__name__)
 def get_json_lines(inp_file):
     lines = []
     with jsonlines.open(inp_file) as reader:
-        for obj in reader:
-            lines.append(obj)
+        lines.extend(iter(reader))
     return lines
 
 class WoWDataset(Dataset):
@@ -37,11 +36,9 @@ class WoWDataset(Dataset):
         # For caching
         data_dirname = os.path.dirname(os.path.abspath(data_path))
         split = os.path.basename(os.path.abspath(data_path))
-        lines = get_json_lines(data_dirname+ '/'+split)
+        lines = get_json_lines(f'{data_dirname}/{split}')
         self.examples = []
-        for i, dialogue in enumerate(lines):
-            self.examples.append(dialogue)
-
+        self.examples.extend(iter(lines))
         self.idx=0
 
     def __len__(self):

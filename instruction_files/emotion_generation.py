@@ -15,30 +15,23 @@ random.seed(123)
 
 instruction_dict = {
     "id": "emotion_generation",
-    "Source": [
-        "self"
-    ],
+    "Source": ["self"],
     "Definitions": [
         "In this task you will generate an utterance given a dialogue context and an emotion",
         "Using the provided emotion, generate a response to the conversation",
         "Write a response to the conversation so that the response contains the emotion providedd",
         "Generate a response to the conversation with the given emotion",
-        "Create a response to the dialog using the given emotion"],
+        "Create a response to the dialog using the given emotion",
+    ],
     "Positive Examples": [
         {
-
-
-            "input": settings.EMOTION_SEP + " anger " +
-                     settings.CONTEXT_SEP + " I won! I won! I finally won! " +
-                     settings.EOT_SEP + " I won! That was my quarter! " +
-                     settings.EOD_SEP + " " +
-                     settings.QUESTION_SEP + " Given the context and emotion, the response is ",
+            "input": f"{settings.EMOTION_SEP} anger {settings.CONTEXT_SEP} I won! I won! I finally won! {settings.EOT_SEP} I won! That was my quarter! {settings.EOD_SEP} {settings.QUESTION_SEP} Given the context and emotion, the response is ",
             "output": "Fine! Here! Take a hike toots!",
             "index": 5987,
             "split": "train",
-            "dataset": "emotionlines"
+            "dataset": "emotionlines",
         }
-    ]
+    ],
 }
 
 
@@ -97,7 +90,7 @@ class Generator(GeneratorBasic):
                 if len(context) == 0:
                     context_str = ''
                 else:
-                    context = (' ' + settings.EOT_SEP + ' ').join(context)
+                    context = f' {settings.EOT_SEP} '.join(context)
                     context_str = ' '.join(context.split()[-settings.MAX_DIALOGUE_LENGTH:])
 
                 if type(dp['emotions']) is str:
@@ -108,13 +101,13 @@ class Generator(GeneratorBasic):
 
                 output = dp['response']
 
-                post_prompts = [settings.QUESTION_SEP + " The response with the given emotion is ",
-                                settings.QUESTION_SEP + " Given the context and emotion, the response is ",
-                                settings.QUESTION_SEP + " A good response using the provided emotion is ",]
+                post_prompts = [
+                    f"{settings.QUESTION_SEP} The response with the given emotion is ",
+                    f"{settings.QUESTION_SEP} Given the context and emotion, the response is ",
+                    f"{settings.QUESTION_SEP} A good response using the provided emotion is ",
+                ]
 
-                text = settings.EMOTION_SEP + " " + emotion + " " + \
-                       settings.CONTEXT_SEP + " " + context_str + " " + settings.EOD_SEP + \
-                       " " + random.choice(post_prompts)
+                text = f"{settings.EMOTION_SEP} {emotion} {settings.CONTEXT_SEP} {context_str} {settings.EOD_SEP} {random.choice(post_prompts)}"
 
                 text = re.sub(' +', ' ', text)
 

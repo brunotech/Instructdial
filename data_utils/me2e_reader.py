@@ -12,8 +12,8 @@ def parse_row(row):
     slots = defaultdict(dict)
     for acts in dialog_acts:
         m = re.match(r'([A-Za-z_]+)(\(.*\))', acts)
-        intent = m.group(1)
-        slots_data = m.group(2)[1:len(m.group(2)) - 1]
+        intent = m[1]
+        slots_data = m[2][1:-1]
 
         if len(slots_data) > 0:
             slots_data = slots_data.split(';')
@@ -23,16 +23,13 @@ def parse_row(row):
 
                 key, value = None, None
                 if m1:
-                    key, value = m1.group(1), m1.group(2)
+                    key, value = m1[1], m1[2]
                 elif m2:
-                    key, value = m2.group(1), m2.group(2)
+                    key, value = m2[1], m2[2]
                 else:
                     key = slot_data
 
-                if value:
-                    slots[intent][key] = value
-                else:
-                    slots[intent][key] = ''
+                slots[intent][key] = value or ''
         else:
             slots[intent] = {}
 
@@ -40,16 +37,16 @@ def parse_row(row):
 
     slot_str = text
     slots_data = []
-    for act, act_data in slots.items():
-        for slot_name, value in act_data.items():
-            if len(value) > 0:
-                slots_data.append((slot_name, value))
-
+    for act_data in slots.values():
+        slots_data.extend(
+            (slot_name, value)
+            for slot_name, value in act_data.items()
+            if len(value) > 0
+        )
     for slot_name, value in slots_data:
         n = len(value.split())
-        to_replace = ['B-{}'.format(slot_name)]
-        for word in range(n - 1):
-            to_replace.append('I-{}'.format(slot_name))
+        to_replace = [f'B-{slot_name}']
+        to_replace.extend(f'I-{slot_name}' for _ in range(n - 1))
         slot_str = slot_str.replace(value, ' '.join(to_replace))
 
     slot_str = slot_str.split()
@@ -95,8 +92,8 @@ class Me2eDataset(Dataset):
                 slots = defaultdict(dict)
                 for acts in dialog_acts:
                     m = re.match(r'([A-Za-z_]+)(\(.*\))', acts)
-                    intent = m.group(1)
-                    slots_data = m.group(2)[1:len(m.group(2)) - 1]
+                    intent = m[1]
+                    slots_data = m[2][1:-1]
 
                     if len(slots_data) > 0:
                         slots_data = slots_data.split(';')
@@ -106,40 +103,37 @@ class Me2eDataset(Dataset):
 
                             key, value = None, None
                             if m1:
-                                key, value = m1.group(1), m1.group(2)
+                                key, value = m1[1], m1[2]
                             elif m2:
-                                key, value = m2.group(1), m2.group(2)
+                                key, value = m2[1], m2[2]
                             else:
                                 key = slot_data
 
-                            if value:
-                                slots[intent][key] = value
-                            else:
-                                slots[intent][key] = ''
+                            slots[intent][key] = value or ''
                     else:
                         slots[intent] = {}
 
                 slot_str = text
                 slots_data = []
-                for act, act_data in slots.items():
-                    for slot_name, value in act_data.items():
-                        if len(value) > 0:
-                            slots_data.append((slot_name, value))
-
+                for act_data in slots.values():
+                    slots_data.extend(
+                        (slot_name, value)
+                        for slot_name, value in act_data.items()
+                        if len(value) > 0
+                    )
                 for slot_name, value in slots_data:
                     value = value.strip()
                     n = len(value.split())
-                    to_replace = ['B-{}'.format(slot_name)]
-                    for word in range(n - 1):
-                        to_replace.append('I-{}'.format(slot_name))
+                    to_replace = [f'B-{slot_name}']
+                    to_replace.extend(f'I-{slot_name}' for _ in range(n - 1))
                     restring = ' '.join(to_replace)
                     slot_str = slot_str.replace(f'{value}', restring)
-                    # if slot_str.endswith(value):
-                    #     slot_str = slot_str.replace(f' {value}', f" {restring}")
-                    # elif slot_str.endswith(value):
-                    #     slot_str = slot_str.replace(f'{value} ', f"{restring} ")
-                    # else:
-                    #     slot_str = slot_str.replace(f' {value} ', f" {restring} ")
+                                # if slot_str.endswith(value):
+                                #     slot_str = slot_str.replace(f' {value}', f" {restring}")
+                                # elif slot_str.endswith(value):
+                                #     slot_str = slot_str.replace(f'{value} ', f"{restring} ")
+                                # else:
+                                #     slot_str = slot_str.replace(f' {value} ', f" {restring} ")
 
                 # if 'B-numberofpeople45pm' in slot_str: # todo
 
@@ -162,7 +156,7 @@ class Me2eDataset(Dataset):
 
                 context.append(text)
 
-                slot_classes = set([s[0] for s in slots_data])
+                slot_classes = {s[0] for s in slots_data}
                 self.slot_classes.update(slot_classes)
                 self.act_classes.update(set(act_classes))
 

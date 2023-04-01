@@ -31,7 +31,7 @@ class MultiwozDataset(Dataset):
                 for slot_name, span_start, span_end in zip(reversed(span_info['act_slot_name']),
                                                            reversed(span_info['span_start']),
                                                            reversed(span_info['span_end'])):
-                    slots = slots[:span_start] + 'SLOT_' + slot_name + slots[span_end:]
+                    slots = f'{slots[:span_start]}SLOT_{slot_name}{slots[span_end:]}'
                 slots = ' '.join(
                     [s.replace('SLOT_', '') if s.startswith('SLOT_') else 'O' for s in slots.split()])
 

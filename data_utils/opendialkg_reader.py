@@ -15,15 +15,11 @@ class OpendialkgDataset(Dataset):
 
         with open(os.path.join(data_path, 'opendialkg.csv'), newline='') as csvfile:
             reader = csv.DictReader(csvfile)
-            rows = [row for row in reader]
+            rows = list(reader)
             n = len(rows)
 
             # split the dialog sessions into train (70%), validation (15%), and test sets (15%) as mentioned in paper
-            if split == 'train':
-                rows = rows[:int(n * 0.7)]
-            else:
-                rows = rows[-int(n * 0.15):]
-
+            rows = rows[:int(n * 0.7)] if split == 'train' else rows[-int(n * 0.15):]
             for row in rows:
                 row = {k: json.loads(v) for k, v in row.items()}
                 context = []
@@ -33,7 +29,7 @@ class OpendialkgDataset(Dataset):
                         response = msg['message']
 
                         graph_str = ''
-                        if len(metadata) > 0:
+                        if metadata:
                             graph_str = ' '.join(metadata)
 
                         context_str = ' '.join(context)
@@ -52,7 +48,5 @@ class OpendialkgDataset(Dataset):
                             continue
                         relations = msg['metadata']['path'][1]
                         for relation in relations:
-                            triplet = 'subject: {}, relation: {}, object: {}'.format(relation[0],
-                                                                                     relation[1],
-                                                                                     relation[2])
+                            triplet = f'subject: {relation[0]}, relation: {relation[1]}, object: {relation[2]}'
                             metadata.append(triplet)

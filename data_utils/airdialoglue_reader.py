@@ -8,5 +8,5 @@ class AirDialogueDataset(Dataset):
         self.idx = 0
         self.examples = []
 
-        with open(os.path.join(data_path, split + '_data.json')) as f:
+        with open(os.path.join(data_path, f'{split}_data.json')) as f:
             self.examples = [json.loads(l) for l in f.readlines()]

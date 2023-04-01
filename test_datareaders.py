@@ -80,15 +80,15 @@ if __name__ == "__main__":
             continue
 
         try:
-            print("Testing dataset={}".format(dataset))
+            print(f"Testing dataset={dataset}")
             test_readers(args, dataset)
         except Exception as e:
             print(e)
-            print("FAILED dataset={}".format(dataset))
+            print(f"FAILED dataset={dataset}")
             failed.append(dataset)
             continue
 
-        print("PASSED dataset={}".format(dataset))
+        print(f"PASSED dataset={dataset}")
         passed.append(dataset)
 
     print("The following datasets + datareaders worked successfully:", ", ".join(passed))

@@ -9,7 +9,7 @@ class CasinoDataset(Dataset):
         self.examples = []
         self.strategy_classes = set([])
 
-        with open(os.path.join(data_path, 'casino_{}.json'.format(split))) as f:
+        with open(os.path.join(data_path, f'casino_{split}.json')) as f:
             data = json.load(f)
 
             for chat in data:

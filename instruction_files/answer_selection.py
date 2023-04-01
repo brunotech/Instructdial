@@ -50,7 +50,7 @@ instruction_dict = {
 
 # def list_tostring(candidates):
 #     assert type(candidates) == list
-    
+
 #     candidate_with_option = []
 #     for option, candidate in zip(ascii_uppercase, candidates):
 #         candidate_with_option.append(f'{option}: {candidate}')
@@ -60,14 +60,18 @@ mask_selection_datasets = [
     'timedial'
 ]
 
-post_prompts = [settings.QUESTION_SEP + " Select the best option from the candidate answer options",
-                settings.QUESTION_SEP + " Choose the best answer index", 
-                settings.QUESTION_SEP + " What is the best candidate answer?", 
-                settings.QUESTION_SEP + " The best option among the answers is"]
+post_prompts = [
+    f"{settings.QUESTION_SEP} Select the best option from the candidate answer options",
+    f"{settings.QUESTION_SEP} Choose the best answer index",
+    f"{settings.QUESTION_SEP} What is the best candidate answer?",
+    f"{settings.QUESTION_SEP} The best option among the answers is",
+]
 
-mask_prompts = [settings.QUESTION_SEP + " Select an option which will fill in the <MASK>",
-                settings.QUESTION_SEP + " What is the best candidate answer for the <MASK>",
-                settings.QUESTION_SEP + " The best answer filling in the <MASK> is"]
+mask_prompts = [
+    f"{settings.QUESTION_SEP} Select an option which will fill in the <MASK>",
+    f"{settings.QUESTION_SEP} What is the best candidate answer for the <MASK>",
+    f"{settings.QUESTION_SEP} The best answer filling in the <MASK> is",
+]
 
 
 class Generator(GeneratorBasic):
@@ -94,7 +98,7 @@ class Generator(GeneratorBasic):
         for d, dataset_reader in enumerate(self.data_readers):
             dataset_reader.idx = 0
             split = dataset_reader.split
-            
+
             datapoints = []
             dp = dataset_reader.get_next()
             while dp is not None:
@@ -103,17 +107,16 @@ class Generator(GeneratorBasic):
                 if dp:
                     datapoints.append(dp)
                     dp['split'] = split
-            
+
             datapoints = random.sample(datapoints, min(len(datapoints), self.max_data))
             definitions = instruction_dict['Definitions']
-            
+
             print(datapoints[-1])
             print(len(datapoints), 'datapoints')
-                
+
             answer_set = [d['answer'] for d in datapoints]
 
-            idx = 0
-            for dp in tqdm(datapoints):
+            for idx, dp in enumerate(tqdm(datapoints)):
                 context, answer = dp['context'], dp['answer']
                 if type(context) is not list:
                     context = [context]
@@ -123,11 +126,9 @@ class Generator(GeneratorBasic):
                 negative = []
                 while len(negative) < 3:
                     r = random.choice(answer_set)
-                    if r == answer or r in negative:
-                        continue
-                    else:
+                    if r != answer and r not in negative:
                         negative.append(r)
-                
+
                 answer_idx = random.randint(0, 3)
                 candidates = negative[:answer_idx] + [answer] + negative[answer_idx:]
                 assert candidates[answer_idx] == answer
@@ -136,7 +137,7 @@ class Generator(GeneratorBasic):
                     candidates = dp['options']
                     answer_idx = candidates.index(answer)
 
-                
+
                 answer_str = get_alphabetwithoptions_string(candidates)
                 if 'document' in dp:
                     document = dp['document']
@@ -147,20 +148,20 @@ class Generator(GeneratorBasic):
                     text = f"{settings.CONTEXT_SEP} {context_str} {settings.EOD_SEP} These are the candidate answers: {answer_str}"
 
                 if dataset_reader.name in mask_selection_datasets:
-                    text = text + ' ' + random.choice(mask_prompts)
+                    text = f'{text} {random.choice(mask_prompts)}'
                 else:
-                    text = text + ' ' + random.choice(post_prompts)
+                    text = f'{text} {random.choice(post_prompts)}'
 
                 output = ascii_uppercase[answer_idx]
                 text = re.sub(' +', ' ', text)
 
-                candidate_options = []
-                for option, candidate in zip(ascii_uppercase, candidates):
-                    candidate_options.append(f'{option}')
+                candidate_options = [
+                    f'{option}'
+                    for option, candidate in zip(ascii_uppercase, candidates)
+                ]
                 sequences.append({'input': text, 'output': output, 
                                      'metadata': {'context':dp['context']},
                                     'index': idx, 'split': dp['split'], 'classes_in_options':candidate_options, 'candidates': candidates, 'dataset': dataset_reader.name})
-                idx += 1
             print(sequences[-1])
 
         return (sequences, instruction_dict)

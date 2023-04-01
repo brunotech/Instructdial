@@ -11,7 +11,7 @@ class EmotionLinesDataset(Dataset):
         self.emotion_classes = set([])
         self.examples = []
 
-        with open(os.path.join(data_path, '{}_sent_emo.csv'.format(split))) as f:
+        with open(os.path.join(data_path, f'{split}_sent_emo.csv')) as f:
             rows = csv.DictReader(f)
 
             context = []

@@ -14,7 +14,7 @@ def load_databases(path):
     # loading databases
     dbs_ = {}
     for domain in domains:
-        db = os.path.join(path, '{}-dbase.db'.format(domain))
+        db = os.path.join(path, f'{domain}-dbase.db')
         conn = sqlite3.connect(db)
         c = conn.cursor()
         dbs_[domain] = c
@@ -51,7 +51,7 @@ def oneHotVector(num, domain, vector):
             vector[idx * 6: idx * 6 + 6] = np.array([0, 0, 0, 1, 0, 0])
         elif num <= 40:
             vector[idx * 6: idx * 6 + 6] = np.array([0, 0, 0, 0, 1, 0])
-        elif num > 40:
+        else:
             vector[idx * 6: idx * 6 + 6] = np.array([0, 0, 0, 0, 0, 1])
 
     return vector
@@ -61,35 +61,39 @@ def queryResult(domain, turn):
     """Returns the list of entities for a given domain
     based on the annotation of the belief state"""
     # query the db
-    sql_query = "select * from {}".format(domain)
+    sql_query = f"select * from {domain}"
 
     flag = True
     # print turn['metadata'][domain]['semi']
     for key, val in turn['metadata'][domain]['semi'].items():
-        if val == "" or val == "dont care" or val == 'not mentioned' or val == "don't care" or val == "dontcare" or val == "do n't care":
-            pass
-        else:
+        if val not in [
+            "",
+            "dont care",
+            'not mentioned',
+            "don't care",
+            "dontcare",
+            "do n't care",
+        ]:
+            val2 = val.replace("'", "''")
             if flag:
                 sql_query += " where "
-                val2 = val.replace("'", "''")
                 # val2 = normalize(val2)
                 # change query for trains
-                if key == 'leaveAt':
-                    sql_query += r" " + key + " > " + r"'" + val2 + r"'"
-                elif key == 'arriveBy':
-                    sql_query += r" " + key + " < " + r"'" + val2 + r"'"
+                if key == 'arriveBy':
+                    sql_query += f" {key} < '{val2}'"
+                elif key == 'leaveAt':
+                    sql_query += f" {key} > '{val2}'"
                 else:
-                    sql_query += r" " + key + "=" + r"'" + val2 + r"'"
+                    sql_query += f" {key}='{val2}'"
                 flag = False
             else:
-                val2 = val.replace("'", "''")
                 # val2 = normalize(val2)
-                if key == 'leaveAt':
-                    sql_query += r" and " + key + " > " + r"'" + val2 + r"'"
-                elif key == 'arriveBy':
-                    sql_query += r" and " + key + " < " + r"'" + val2 + r"'"
+                if key == 'arriveBy':
+                    sql_query += f" and {key} < '{val2}'"
+                elif key == 'leaveAt':
+                    sql_query += f" and {key} > '{val2}'"
                 else:
-                    sql_query += r" and " + key + "=" + r"'" + val2 + r"'"
+                    sql_query += f" and {key}='{val2}" + r"'"
 
     # try:  # "select * from attraction  where name = 'queens college'"
     # print sql_query
@@ -101,7 +105,7 @@ def queryResult(domain, turn):
 
 def queryResultVenues(domain, turn, real_belief=False):
     # query the db
-    sql_query = "select * from {}".format(domain)
+    sql_query = f"select * from {domain}"
 
     if real_belief == True:
         items = turn.items()
@@ -115,27 +119,25 @@ def queryResultVenues(domain, turn, real_belief=False):
                 key = "leaveAt"
             elif key == "arrive by":
                 key = "arriveBy"
-            if val == "do n't care":
-                pass
-            else:
+            if val != "do n't care":
                 if flag:
                     sql_query += " where "
                     val2 = val.replace("'", "''")
                     val2 = normalize(val2)
-                    if key == 'leaveAt':
-                        sql_query += key + " > " + r"'" + val2 + r"'"
-                    elif key == 'arriveBy':
-                        sql_query += key + " < " + r"'" + val2 + r"'"
+                    if key == 'arriveBy':
+                        sql_query += f"{key} < '{val2}'"
+                    elif key == 'leaveAt':
+                        sql_query += f"{key} > '{val2}'"
                     else:
-                        sql_query += r" " + key + "=" + r"'" + val2 + r"'"
+                        sql_query += f" {key}='" + val2 + r"'"
                     flag = False
                 else:
                     val2 = val.replace("'", "''")
                     val2 = normalize(val2)
-                    if key == 'leaveAt':
-                        sql_query += r" and " + key + " > " + r"'" + val2 + r"'"
-                    elif key == 'arriveBy':
+                    if key == 'arriveBy':
                         sql_query += r" and " + key + " < " + r"'" + val2 + r"'"
+                    elif key == 'leaveAt':
+                        sql_query += r" and " + key + " > " + r"'" + val2 + r"'"
                     else:
                         sql_query += r" and " + key + "=" + r"'" + val2 + r"'"
 
@@ -143,33 +145,35 @@ def queryResultVenues(domain, turn, real_belief=False):
                 return dbs[domain].execute(sql_query).fetchall()
             except:
                 return []  # TODO test it
-        pass
     else:
         items = turn['metadata'][domain]['semi'].items()
 
     flag = True
     for key, val in items:
-        if val == "" or val == "dontcare" or val == 'not mentioned' or val == "don't care" or val == "dont care" or val == "do n't care":
-            pass
-        else:
+        if val not in [
+            "",
+            "dontcare",
+            'not mentioned',
+            "don't care",
+            "dont care",
+            "do n't care",
+        ]:
+            val2 = val.replace("'", "''")
+            val2 = normalize(val2)
             if flag:
                 sql_query += " where "
-                val2 = val.replace("'", "''")
-                val2 = normalize(val2)
-                if key == 'leaveAt':
-                    sql_query += r" " + key + " > " + r"'" + val2 + r"'"
-                elif key == 'arriveBy':
+                if key == 'arriveBy':
                     sql_query += r" " + key + " < " + r"'" + val2 + r"'"
+                elif key == 'leaveAt':
+                    sql_query += r" " + key + " > " + r"'" + val2 + r"'"
                 else:
                     sql_query += r" " + key + "=" + r"'" + val2 + r"'"
                 flag = False
             else:
-                val2 = val.replace("'", "''")
-                val2 = normalize(val2)
-                if key == 'leaveAt':
-                    sql_query += r" and " + key + " > " + r"'" + val2 + r"'"
-                elif key == 'arriveBy':
+                if key == 'arriveBy':
                     sql_query += r" and " + key + " < " + r"'" + val2 + r"'"
+                elif key == 'leaveAt':
+                    sql_query += r" and " + key + " > " + r"'" + val2 + r"'"
                 else:
                     sql_query += r" and " + key + "=" + r"'" + val2 + r"'"
 

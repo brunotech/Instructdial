@@ -20,19 +20,32 @@ instruction_dict = {
         "Provide a response using the given dialogue context and dialogue act ",
         "Given a response act and a dialogue, provide a response ",
         "Given a dialogue act and a dialogue, provide a response ",
-        "Provide a response using the given dialog context and dialog act "],
+        "Provide a response using the given dialog context and dialog act ",
+    ],
     "Positive Examples": [
         {
-            "text": settings.ACT_SEP + " inform " +
-                    settings.CONTEXT_SEP + " Hi, I\'m looking for a nice German restaurant. " +
-                    settings.EOD_SEP + " " +
-                    settings.QUESTION_SEP + " The response is ",
+            "text": (
+                (
+                    (
+                        (
+                            (
+                                f"{settings.ACT_SEP} inform {settings.CONTEXT_SEP}"
+                                + " Hi, I\'m looking for a nice German restaurant. "
+                            )
+                            + settings.EOD_SEP
+                        )
+                        + " "
+                    )
+                    + settings.QUESTION_SEP
+                )
+                + " The response is "
+            ),
             "output": "There are no German restaurants listed, do you have another preference?",
             "index": 5,
             "split": "train",
-            "dataset": "woz"
+            "dataset": "woz",
         }
-    ]
+    ],
 }
 
 
@@ -86,7 +99,9 @@ class Generator(GeneratorBasic):
                 index = dp.get('index', -1)
                 split = dp.get('split', 'unspecified')
 
-                context = (' ' + settings.EOT_SEP + ' ').join(dp['context'][-self.context_max_length:])
+                context = f' {settings.EOT_SEP} '.join(
+                    dp['context'][-self.context_max_length :]
+                )
                 context_str = ' '.join(context.split()[-settings.MAX_DIALOGUE_LENGTH:])
 
                 if dataset_reader.name=='dailydialog':
@@ -103,13 +118,13 @@ class Generator(GeneratorBasic):
                     acts = list(acts.keys())
                 acts = ' [SEP] '.join(acts)
 
-                post_prompts = [settings.QUESTION_SEP + " The response with the given dialogue act is ",
-                                settings.QUESTION_SEP + " Given the context and act, an appropriate response is ",
-                                settings.QUESTION_SEP + " A good response using the act is "]
+                post_prompts = [
+                    f"{settings.QUESTION_SEP} The response with the given dialogue act is ",
+                    f"{settings.QUESTION_SEP} Given the context and act, an appropriate response is ",
+                    f"{settings.QUESTION_SEP} A good response using the act is ",
+                ]
 
-                text = settings.ACT_SEP + " " + acts + " " \
-                       + settings.CONTEXT_SEP + " " + context_str + " " + settings.EOD_SEP \
-                       + " " + random.choice(post_prompts)
+                text = f"{settings.ACT_SEP} {acts} {settings.CONTEXT_SEP} {context_str} {settings.EOD_SEP} {random.choice(post_prompts)}"
 
                 text = re.sub(' +', ' ', text)
                 sequences.append(

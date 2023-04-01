@@ -8,7 +8,7 @@ class SaferDialoguesDataset(Dataset):
         self.idx = 0
         self.examples = []
 
-        with open(os.path.join(data_path, 'saferdialogues_dataset', split + '.txt')) as f:
+        with open(os.path.join(data_path, 'saferdialogues_dataset', f'{split}.txt')) as f:
             lines = [l.rstrip() for l in f.readlines()]
 
         print('len data', len(lines))

@@ -13,9 +13,9 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 fin = open(os.path.join(__location__, 'mapping.pair'), 'r')
 
 replacements = []
-for line in fin.readlines():
+for line in fin:
     tok_from, tok_to = line.replace('\n', '').split('\t')
-    replacements.append((' ' + tok_from + ' ', ' ' + tok_to + ' '))
+    replacements.append((f' {tok_from} ', f' {tok_to} '))
 
 
 def insertSpace(token, text):
@@ -29,10 +29,10 @@ def insertSpace(token, text):
             sidx += 1
             continue
         if text[sidx - 1] != ' ':
-            text = text[:sidx] + ' ' + text[sidx:]
+            text = f'{text[:sidx]} {text[sidx:]}'
             sidx += 1
         if sidx + len(token) < len(text) and text[sidx + len(token)] != ' ':
-            text = text[:sidx + 1] + ' ' + text[sidx + 1:]
+            text = f'{text[:sidx + 1]} {text[sidx + 1:]}'
         sidx += 1
     return text
 
@@ -49,9 +49,9 @@ def normalize(text, clean_value=True):
     text = re.sub(r"b and b", "bed and breakfast", text)
 
     if clean_value:
-        # normalize phone number
-        ms = re.findall('\(?(\d{3})\)?[-.\s]?(\d{3})[-.\s]?(\d{4,5})', text)
-        if ms:
+        if ms := re.findall(
+            '\(?(\d{3})\)?[-.\s]?(\d{3})[-.\s]?(\d{4,5})', text
+        ):
             sidx = 0
             for m in ms:
                 sidx = text.find(m[0], sidx)
@@ -60,10 +60,10 @@ def normalize(text, clean_value=True):
                 eidx = text.find(m[-1], sidx) + len(m[-1])
                 text = text.replace(text[sidx:eidx], ''.join(m))
 
-        # normalize postcode
-        ms = re.findall('([a-z]{1}[\. ]?[a-z]{1}[\. ]?\d{1,2}[, ]+\d{1}[\. ]?[a-z]{1}[\. ]?[a-z]{1}|[a-z]{2}\d{2}[a-z]{2})',
-                        text)
-        if ms:
+        if ms := re.findall(
+            '([a-z]{1}[\. ]?[a-z]{1}[\. ]?\d{1,2}[, ]+\d{1}[\. ]?[a-z]{1}[\. ]?[a-z]{1}|[a-z]{2}\d{2}[a-z]{2})',
+            text,
+        ):
             sidx = 0
             for m in ms:
                 sidx = text.find(m, sidx)
@@ -101,7 +101,7 @@ def normalize(text, clean_value=True):
     text = re.sub('\'\s', ' ', text)
     text = re.sub('\s\'', ' ', text)
     for fromx, tox in replacements:
-        text = ' ' + text + ' '
+        text = f' {text} '
         text = text.replace(fromx, tox)[1:-1]
 
     # remove multiple spaces
@@ -164,8 +164,7 @@ class BLEUScorer(object):
                         refcnts = Counter(ngrams(ref, i + 1))
                         for ng in hypcnts:
                             max_counts[ng] = max(max_counts.get(ng, 0), refcnts[ng])
-                    clipcnt = dict((ng, min(count, max_counts[ng])) \
-                                   for ng, count in hypcnts.items())
+                    clipcnt = {ng: min(count, max_counts[ng]) for ng, count in hypcnts.items()}
                     clip_count[i] += sum(clipcnt.values())
 
                 # accumulate r & c
@@ -184,11 +183,10 @@ class BLEUScorer(object):
         p0 = 1e-7
         bp = 1 if c > r else math.exp(1 - float(r) / float(c))
         p_ns = [float(clip_count[i]) / float(count[i] + p0) + p0 \
-                for i in range(4)]
+                    for i in range(4)]
         s = math.fsum(w * math.log(p_n) \
-                      for w, p_n in zip(weights, p_ns) if p_n)
-        bleu = bp * math.exp(s)
-        return bleu
+                          for w, p_n in zip(weights, p_ns) if p_n)
+        return bp * math.exp(s)
 
 
 class GentScorer(object):
@@ -217,8 +215,7 @@ def sentence_bleu_4(hyp, refs, weights=[0.25, 0.25, 0.25, 0.25]):
             refcnts = Counter(ngrams(ref, i + 1))
             for ng in hypcnts:
                 max_counts[ng] = max(max_counts.get(ng, 0), refcnts[ng])
-        clipcnt = dict((ng, min(count, max_counts[ng])) \
-                       for ng, count in hypcnts.items())
+        clipcnt = {ng: min(count, max_counts[ng]) for ng, count in hypcnts.items()}
         clip_count[i] += sum(clipcnt.values())
 
     bestmatch = [1000, 1000]
@@ -237,9 +234,7 @@ def sentence_bleu_4(hyp, refs, weights=[0.25, 0.25, 0.25, 0.25]):
 
     p_ns = [float(clip_count[i]) / float(count[i] + p0) + p0 for i in range(4)]
     s = math.fsum(w * math.log(p_n) for w, p_n in zip(weights, p_ns) if p_n)
-    bleu_hyp = bp * math.exp(s)
-
-    return bleu_hyp
+    return bp * math.exp(s)
 
 if __name__ == '__main__':
     text = "restaurant's CB39AL one seven"

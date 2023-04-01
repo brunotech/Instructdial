@@ -10,7 +10,7 @@ class GoEmotionsDataset(Dataset):
         with open(os.path.join(data_path, 'emotions.txt')) as f:
             self.emotion_classes = [l.strip() for l in f.readlines()]
 
-        with open(os.path.join(data_path, '{}.tsv'.format(split))) as f:
+        with open(os.path.join(data_path, f'{split}.tsv')) as f:
             reader = csv.reader(f, delimiter='\t')
             for row in reader:
                 emotions = [self.emotion_classes[int(i.strip())] for i in row[1].split(',')]

@@ -32,7 +32,7 @@ def merge_multi_response(sequences, ignore_idx=None):
     for bsz_seq in sequences:
         length = [len(v) for v in bsz_seq]
         lengths.append(length)
-    max_len = max([max(l) for l in lengths])
+    max_len = max(max(l) for l in lengths)
     padded_seqs = []
     for bsz_seq in sequences:
         pad_seq = []
@@ -50,22 +50,22 @@ def merge_sent_and_word(sequences, ignore_idx=None):
     merge from batch * nb_sent * nb_word to batch * max_nb_sent * max_nb_word
     '''
 
-    max_nb_sent = max([len(seq) for seq in sequences])
+    max_nb_sent = max(len(seq) for seq in sequences)
     max_nb_word, lengths = [], []
     for seq in sequences:
         length = [len(sent) for sent in seq]
         max_nb_word += length
         lengths.append(length)
     max_nb_word = max(max_nb_word)
-    
+
     pad_token = PAD_token if type(ignore_idx)==type(None) else ignore_idx
     padded_seqs = np.ones((len(sequences), max_nb_sent, max_nb_word)) * pad_token 
-    
+
     for i, seq in enumerate(sequences):
         for ii, sent in enumerate(seq):
             padded_seqs[i, ii, :len(sent)] = np.array(sent)
     padded_seqs = torch.LongTensor(padded_seqs)
-    padded_seqs = padded_seqs.detach() 
+    padded_seqs = padded_seqs.detach()
     return padded_seqs, lengths
 
 

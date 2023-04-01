@@ -11,15 +11,15 @@ class AtisDataset(Dataset):
         slots_dict = self.read("atis.dict.slots.csv", dict=True)
         intents_dict = self.read("atis.dict.intent.csv", dict=True)
         vocab_dict = self.read("atis.dict.vocab.csv", dict=True)
-        train_slots = self.read("atis.{}.slots.csv".format(split))
-        train_intents = self.read("atis.{}.intent.csv".format(split))
-        train_query = self.read("atis.{}.query.csv".format(split))
+        train_slots = self.read(f"atis.{split}.slots.csv")
+        train_intents = self.read(f"atis.{split}.intent.csv")
+        train_query = self.read(f"atis.{split}.query.csv")
         self.slot_classes = list(slots_dict.values())
         self.intent_classes =  list(intents_dict.values())
 
         for slots, intent, query in zip(train_slots, train_intents, train_query):
-            query = query[1: len(query)-1]
-            slots = slots[1: len(slots)-1]
+            query = query[1:-1]
+            slots = slots[1:-1]
             slots_out = ' '.join([slots_dict[int(s)] for s in slots])
             intent_out = intents_dict[int(intent[0])]
             query_out = ' '.join([vocab_dict[int(q)] for q in query])

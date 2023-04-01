@@ -80,7 +80,7 @@ class TransformResponses:
         return ' '.join(tokens)
 
     def drop_stopwords(self, sent):
-        x  = [word.text for word in self.nlp(sent) if not word.text in self.stopwords]
+        x = [word.text for word in self.nlp(sent) if word.text not in self.stopwords]
         return ' '.join(x)
     
     # def synonym_adjective(self, sent):
@@ -184,17 +184,11 @@ class TransformResponses:
         for i in range(l-1):
             w, p = pos[i]
             if i< l*0.25:
-                rep_word += " " + w
+                rep_word += f" {w}"
                 flag = 1
-                sen.append(w)
-            else:
-                sen.append(w)
-        sen.append(pos[l-1][0])
-        sen.append(rep_word)
-        if flag==1: 
-            out = " ".join(w for w in sen)
-            return out
-        return sent
+            sen.append(w)
+        sen.extend((pos[l-1][0], rep_word))
+        return " ".join(sen) if flag==1 else sent
 
 
 
@@ -210,10 +204,7 @@ class TransformResponses:
         l = len(pos)
         flag = 0
         le = round(l*0.6)
-        if len(sent)<5:
-            x = 0
-        else:
-            x = random.randint(0,le-1)
+        x = 0 if len(sent)<5 else random.randint(0,le-1)
         y = 0
         for i in range(l-1):
             w, p = pos[i]
@@ -224,10 +215,7 @@ class TransformResponses:
             else:
                 sen.append(w)
         sen.append(pos[l-1][0])
-        if flag==1: 
-            out = " ".join(w for w in sen)
-            return out 
-        return sent
+        return " ".join(sen) if flag==1 else sent
 
     def insert_phrases(self, sent, sent2):
         sent2_tokens = sent2.split()
@@ -235,7 +223,7 @@ class TransformResponses:
             init = 0
             end = 1
         else:
-            init = random.choice(range(int(len(sent2_tokens)/2)))
+            init = random.choice(range(len(sent2_tokens) // 2))
             end = random.choice(range(init, len(sent2_tokens)))
         sent2_tokens = sent2_tokens[init:end]
         if len(sent2_tokens)>8:
@@ -258,21 +246,14 @@ class TransformResponses:
             else:
                 sen.append(w)
         sen.append(pos[l-1][0])
-        if flag==1: 
-            out = " ".join(w for w in sen)
-            return out 
-        return sent    
+        return " ".join(sen) if flag==1 else sent    
     
     def repeat_sentences(self, sent):
         toks = sent_tokenize(sent)
-        sent = []
         l = len(toks)
-        i = 0
-        while i<l:
-            sent.append(toks[i])
-            i+=1
+        sent = [toks[i] for i in range(l)]
         sent.append(toks[0])
-        out = " ".join(x for x in sent)
+        out = " ".join(sent)
         return out if out !=sent  else sent
     
     def sentence_reorder(self, sent):
@@ -315,14 +296,11 @@ def get_finalkeywords(keywords):
     words_covered = set()
     final_keywords = []
     for k in keywords:
-        is_covered = False
-        for w_in_k in k.split():
-            if w_in_k in words_covered:
-                is_covered = True
+        is_covered = any(w_in_k in words_covered for w_in_k in k.split())
         if not is_covered:
             final_keywords.append(k)
             words_covered |= set(k.split())
-        
+
     return final_keywords
 
 
@@ -332,7 +310,7 @@ def list_tostring(classes):
     if len(classes)<2:
         return ' '.join(classes)
     elif len(classes)==2:
-        return classes[0] + ' and ' + classes[1]
+        return f'{classes[0]} and {classes[1]}'
     else:
         return ', '.join(classes[:-1]) + ' and ' + classes[-1]
 
@@ -390,23 +368,24 @@ class Generator(GeneratorBasic):
                 index = dp.get('index', -1)
                 split = dp.get('split', 'unspecified')
 
-                if 'sum' in dataset_reader.name.lower():
-                    if '\n#' in dp['context']:
-                        dp['response'] = dp['context'].split('\n')[-1]
-                        dp['context'] = dp['context'].split('\n')[:-1]
+                if 'sum' in dataset_reader.name.lower() and '\n#' in dp['context']:
+                    dp['response'] = dp['context'].split('\n')[-1]
+                    dp['context'] = dp['context'].split('\n')[:-1]
 
                 if type(dp['context']) is str:
                     dp['context'] = [dp['context']]
                     # print('context str format found')
                     # import pdb;pdb.set_trace()
-                context = (' '+settings.EOT_SEP+ ' ').join(dp['context'][-settings.MAX_CONTEXT_NUMUTTERANCE:])
+                context = f' {settings.EOT_SEP} '.join(
+                    dp['context'][-settings.MAX_CONTEXT_NUMUTTERANCE :]
+                )
                 if 'response' not in dp:
                     print(dp)
                     import pdb;pdb.set_trace()
                 response = dp['response']
-                
+
                 sent1 = random.choice(datapoints).get('response', None)
-                if sent1 == None:
+                if sent1 is None:
                     sent1 = random.choice(datapoints).get('context', 'no good choice now')[0]
 
                 chosen_transform, condition_response_str = get_random_transform(poison, response, sent1)
@@ -415,17 +394,19 @@ class Generator(GeneratorBasic):
                     continue
 
                 context_str = ' '.join(context.split()[-settings.MAX_DIALOGUE_LENGTH:])
-                if len(context_str)==0:
+                if not context_str:
                     continue
                     # dp.pop('knowledge', None)
                     # print(dp)
-                text =  settings.CONTEXT_SEP +" "+ context_str + " " + settings.RESPONSE_SEP + " " + condition_response_str + " " + settings.EOD_SEP 
-                post_prompts = [settings.QUESTION_SEP+" Given this context and response provided, the edited response is",
-                                settings.QUESTION_SEP+" Generate the rephrased response with the provided context",
-                                settings.QUESTION_SEP+" Given this context generate the edited version of the response that is coherent",
-                                settings.QUESTION_SEP+" Here is a response which is a coherent rephrase of the given response"]
-                
-                text = text +' '+ random.choice(post_prompts)
+                text = f"{settings.CONTEXT_SEP} {context_str} {settings.RESPONSE_SEP} {condition_response_str} {settings.EOD_SEP}"
+                post_prompts = [
+                    f"{settings.QUESTION_SEP} Given this context and response provided, the edited response is",
+                    f"{settings.QUESTION_SEP} Generate the rephrased response with the provided context",
+                    f"{settings.QUESTION_SEP} Given this context generate the edited version of the response that is coherent",
+                    f"{settings.QUESTION_SEP} Here is a response which is a coherent rephrase of the given response",
+                ]
+
+                text = f'{text} {random.choice(post_prompts)}'
                 text = re.sub(' +', ' ', text)
                 output = response
                 sequences.append({'text':text, 'output': output, 'metadata':{'context':dp['context'], 'condition_response_str':condition_response_str, 'chosen_transform':chosen_transform}, 'index':index, 'split':split, 'dataset':dataset_reader.name})
@@ -433,7 +414,7 @@ class Generator(GeneratorBasic):
         new_defs = []
         for definition in instruction_dict['Definitions']:
             extra_actions = ['improve', 'revise', 'polish', 'modify', 'adapt', 'rewrite', 'reword', 'redraft', 'rephrase', 'alter']
-            for i in range(10):
+            for _ in range(10):
                 chosen_action = random.choice(extra_actions)
                 rephrase = definition.replace('edit',chosen_action)
                 rephrase = definition.replace('convert',chosen_action)

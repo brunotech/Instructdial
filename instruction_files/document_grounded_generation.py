@@ -17,20 +17,17 @@ instruction_dict = {
         "In this task you will be shown a conversation and facts from a document. You need to generate a response to the conversation based on the provided document facts.",
         "You will be shown a conversation and a document. Generate a response to the conversation using the provided document facts.",
         "Read the dialogue and the document text to generate a response",
-        "Given a conversation and facts from a document, provide a response to the conversation which uses the document facts"],
+        "Given a conversation and facts from a document, provide a response to the conversation which uses the document facts",
+    ],
     "Positive Examples": [
         {
-            "text": settings.WIKI_SEP + " you must report a change of address to DMV within ten days of moving. " +
-                    settings.CLASS_SEPARATOR + " That is the case for the address associated with your license, as well as all the addresses associated with each registered vehicle, which may differ. " +
-                    settings.CONTEXT_SEP + " Hello, I forgot o update my address, can you help me with that? " +
-                    settings.EOD_SEP + " " +
-                    settings.QUESTION_SEP + " Given this context and document, the response is ",
+            "text": f"{settings.WIKI_SEP} you must report a change of address to DMV within ten days of moving. {settings.CLASS_SEPARATOR} That is the case for the address associated with your license, as well as all the addresses associated with each registered vehicle, which may differ. {settings.CONTEXT_SEP} Hello, I forgot o update my address, can you help me with that? {settings.EOD_SEP} {settings.QUESTION_SEP} Given this context and document, the response is ",
             "output": "hi, you have to report any change of address to DMV within 10 days after moving. You should do this both for the address associated with your license and all the addresses associated with all your vehicles.",
             "index": 1,
             "split": "train",
-            "dataset": "doc2dial"
+            "dataset": "doc2dial",
         }
-    ]
+    ],
 }
 
 
@@ -81,9 +78,11 @@ class Generator(GeneratorBasic):
                 index = dp.get('index', -1)
                 split = dp.get('split', 'unspecified')
 
-                context = (' ' + settings.EOT_SEP + ' ').join(dp['context'][-self.context_max_length:])
+                context = f' {settings.EOT_SEP} '.join(
+                    dp['context'][-self.context_max_length :]
+                )
                 if type(dp['doc']) is list:
-                    doc = (' ' + settings.CLASS_SEPARATOR + ' ').join(dp['doc'])
+                    doc = f' {settings.CLASS_SEPARATOR} '.join(dp['doc'])
                 else:
                     doc = dp['doc']
                 doc = re.sub("  +", " ", doc)
@@ -92,13 +91,15 @@ class Generator(GeneratorBasic):
                     doc = ' '.join(doc.split())[:settings.MAX_DOCUMENT_LENGTH]
                 output = dp['response']
                 context_str = ' '.join(context.split()[-settings.MAX_DIALOGUE_LENGTH:])
-                text = settings.WIKI_SEP + " " + doc + " " + settings.CONTEXT_SEP + " " + context_str + " " + settings.EOD_SEP
-                post_prompts = [settings.QUESTION_SEP+" Given this context and provided document, the response is",
-                                settings.QUESTION_SEP+" Generate a response to the provided context which contains the provided document content",
-                                settings.QUESTION_SEP+" Given this context generate a response which has the given document knowledge",
-                                settings.QUESTION_SEP+" Here is a response that contains the given document knowledge"]
+                text = f"{settings.WIKI_SEP} {doc} {settings.CONTEXT_SEP} {context_str} {settings.EOD_SEP}"
+                post_prompts = [
+                    f"{settings.QUESTION_SEP} Given this context and provided document, the response is",
+                    f"{settings.QUESTION_SEP} Generate a response to the provided context which contains the provided document content",
+                    f"{settings.QUESTION_SEP} Given this context generate a response which has the given document knowledge",
+                    f"{settings.QUESTION_SEP} Here is a response that contains the given document knowledge",
+                ]
 
-                text = text +' '+ random.choice(post_prompts)
+                text = f'{text} {random.choice(post_prompts)}'
                 text = re.sub(' +', ' ', text)
                 max_text_size = max(len(text.split()),max_text_size)
                 dat = {'text': text,

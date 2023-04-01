@@ -21,8 +21,8 @@ def update_belief_state(usr_dict, prev_bs_dict, prev_bs_name_list):
         res_dx_text = '[restaurant] '
         for name in res_bs_name_list:
             value = res_bs_dict[name]
-            res_text += name + ' ' + value + ' '
-            res_dx_text += name + ' '
+            res_text += f'{name} {value} '
+            res_dx_text += f'{name} '
         res_text = res_text.strip().strip(' , ').strip()
         res_dx_text = res_dx_text.strip().strip(' , ').strip()
     return res_text, res_dx_text, res_bs_dict, res_bs_name_list
@@ -33,12 +33,10 @@ def zip_sess_list(sess_list):
     assert sess_list[0]["system_transcript"] == ''
     if turn_num == 1:
         raise Exception()
-    turn_list = []
-    for idx in range(turn_num - 1):
-        curr_turn_dict = sess_list[idx]
-        system_uttr = sess_list[idx + 1]['system_transcript']
-        turn_list.append((curr_turn_dict, system_uttr))
-    return turn_list
+    return [
+        (sess_list[idx], sess_list[idx + 1]['system_transcript'])
+        for idx in range(turn_num - 1)
+    ]
 
 
 def process_session(sess_list):
@@ -53,13 +51,15 @@ def process_session(sess_list):
         one_usr_bs, one_usr_bsdx, bs_dict, bs_name_list = \
             update_belief_state(one_usr_dict, bs_dict, bs_name_list)
 
-        one_turn_dict = {'turn_num': idx}
-        one_turn_dict['user'] = one_usr_uttr
-        one_turn_dict['resp'] = one_system_uttr
-        one_turn_dict['turn_domain'] = ['[restaurant]']
-        one_turn_dict['bspn'] = one_usr_bs
-        one_turn_dict['bsdx'] = one_usr_bsdx
-        one_turn_dict['aspn'] = ''
+        one_turn_dict = {
+            'turn_num': idx,
+            'user': one_usr_uttr,
+            'resp': one_system_uttr,
+            'turn_domain': ['[restaurant]'],
+            'bspn': one_usr_bs,
+            'bsdx': one_usr_bsdx,
+            'aspn': '',
+        }
         res_dict['dialogue_session'].append(one_turn_dict)
     return res_dict
 
@@ -85,7 +85,7 @@ class WozDataset(Dataset):
         self.slot_classes = set()
         self.act_classes = set()
 
-        with open(os.path.join(data_path, 'woz_{}_en.json'.format(split))) as f:
+        with open(os.path.join(data_path, f'woz_{split}_en.json')) as f:
             data = json.load(f)
 
         for dialogue in data:
@@ -97,11 +97,7 @@ class WozDataset(Dataset):
                 slots = turn['asr'][0][0].lower().split()
 
                 for j, word in enumerate(slots):
-                    if word in slot_data:
-                        slots[j] = 'B-{}'.format(slot_data[word])
-                    else:
-                        slots[j] = 'O'
-
+                    slots[j] = f'B-{slot_data[word]}' if word in slot_data else 'O'
                 acts = defaultdict(list)
                 if i > 1:
                     for info in turns[i - 1]['belief_state']:
@@ -114,8 +110,7 @@ class WozDataset(Dataset):
 
                 belief_str = []
                 for bs in turn['belief_state']:
-                    for slot in bs['slots']:
-                        belief_str.append('{} : {}'.format(slot[0], slot[1]))
+                    belief_str.extend(f'{slot[0]} : {slot[1]}' for slot in bs['slots'])
                 belief_str = ' , '.join(belief_str)
 
                 if len(response) > 0:

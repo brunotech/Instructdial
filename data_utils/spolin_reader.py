@@ -7,11 +7,7 @@ class SpolinDataset(Dataset):
     def __init__(self, data_path, split='train'):
         self.idx = 0
         self.examples = []
-        if split == 'train':
-            filein = 'spolin-train.json'
-        else:
-            filein = 'spolin-valid.json'
-
+        filein = 'spolin-train.json' if split == 'train' else 'spolin-valid.json'
         with open(os.path.join(data_path, filein)) as f:
             data = json.load(f)
 

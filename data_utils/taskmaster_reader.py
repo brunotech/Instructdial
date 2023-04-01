@@ -10,7 +10,7 @@ class TaskMasterDataset(Dataset):
 
         categories = ['flights', 'food-ordering', 'hotels', 'movies', 'music', 'restaurant-search', 'sports']
         for category in categories:
-            with open(os.path.join(data_path, category + '.json')) as f:
+            with open(os.path.join(data_path, f'{category}.json')) as f:
                 data = json.load(f)
                 for conv in data:
                     if len(conv['slots']) > 0:

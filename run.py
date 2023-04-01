@@ -33,9 +33,9 @@ def get_instructions(instruction_files):
     allinstruction_files = [f for f in listdir(instruction_folder) if isfile(join(instruction_folder, f))]
     useful_files = []
     for filename in instruction_files:
-        for fname in allinstruction_files:
-            if filename in fname:
-                useful_files.append(fname)
+        useful_files.extend(
+            fname for fname in allinstruction_files if filename in fname
+        )
     print(useful_files)
 
     instructions_all = []

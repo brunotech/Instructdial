@@ -5,77 +5,81 @@ from data_utils.data_reader import Dataset
 
 random.seed(123)
 
-domain_term_dict = {}
-domain_term_dict['uber_lyft'] = {'location.from': 'from location',
-                                 'location.to': 'to location',
-                                 'type.ride': 'ride type',
-                                 'num.people': 'number of people',
-                                 'price.estimate': 'estimate price',
-                                 'duration.estimate': 'estimate duration',
-                                 'time.pickup': 'pickup time',
-                                 'time.dropoff': 'dropoff time'}
-
-domain_term_dict['movie_ticket'] = {'name.movie': 'movie name',
-                                    'name.theater': 'theater name',
-                                    'num.tickets': 'number of tickets',
-                                    'time.start': 'start time',
-                                    'location.theater': 'theater location',
-                                    'price.ticket': 'ticket price',
-                                    'type.screening': 'screening type',
-                                    'time.end': 'end time',
-                                    'time.duration': 'duration time'}
-
-domain_term_dict['restaurant_reservation'] = {'name.restaurant': 'restaurant name',
-                                              'name.reservation': 'reservation name',
-                                              'num.guests': 'number of guests',
-                                              'time.reservation': 'reservation time',
-                                              'type.seating': 'seating type',
-                                              'location.restaurant': 'restaurant location'}
-
-domain_term_dict['coffee_ordering'] = {'location.store': 'store location',
-                                       'name.drink': 'drink name',
-                                       'size.drink': 'drink size',
-                                       'num.drink': 'number of drink',
-                                       'type.milk': 'milk type',
-                                       'preference': 'preference'}
-
-domain_term_dict['pizza_ordering'] = {'name.store': 'store name',
-                                      'name.pizza': 'pizza name',
-                                      'size.pizza': 'pizza size',
-                                      'type.topping': 'topping type',
-                                      'type.crust': 'crust type',
-                                      'preference': 'preference',
-                                      'location.store': 'store location'}
-
-domain_term_dict['auto_repair'] = {'name.store': 'store name',
-                                   'name.customer': 'customer name',
-                                   'date.appt': 'appt date',
-                                   'time.appt': 'appt time',
-                                   'reason.appt': 'appt reason',
-                                   'name.vehicle': 'vehicle name',
-                                   'year.vehicle': 'vehicle year',
-                                   'location.store': 'store location'}
-
+domain_term_dict = {
+    'uber_lyft': {
+        'location.from': 'from location',
+        'location.to': 'to location',
+        'type.ride': 'ride type',
+        'num.people': 'number of people',
+        'price.estimate': 'estimate price',
+        'duration.estimate': 'estimate duration',
+        'time.pickup': 'pickup time',
+        'time.dropoff': 'dropoff time',
+    },
+    'movie_ticket': {
+        'name.movie': 'movie name',
+        'name.theater': 'theater name',
+        'num.tickets': 'number of tickets',
+        'time.start': 'start time',
+        'location.theater': 'theater location',
+        'price.ticket': 'ticket price',
+        'type.screening': 'screening type',
+        'time.end': 'end time',
+        'time.duration': 'duration time',
+    },
+    'restaurant_reservation': {
+        'name.restaurant': 'restaurant name',
+        'name.reservation': 'reservation name',
+        'num.guests': 'number of guests',
+        'time.reservation': 'reservation time',
+        'type.seating': 'seating type',
+        'location.restaurant': 'restaurant location',
+    },
+    'coffee_ordering': {
+        'location.store': 'store location',
+        'name.drink': 'drink name',
+        'size.drink': 'drink size',
+        'num.drink': 'number of drink',
+        'type.milk': 'milk type',
+        'preference': 'preference',
+    },
+    'pizza_ordering': {
+        'name.store': 'store name',
+        'name.pizza': 'pizza name',
+        'size.pizza': 'pizza size',
+        'type.topping': 'topping type',
+        'type.crust': 'crust type',
+        'preference': 'preference',
+        'location.store': 'store location',
+    },
+    'auto_repair': {
+        'name.store': 'store name',
+        'name.customer': 'customer name',
+        'date.appt': 'appt date',
+        'time.appt': 'appt time',
+        'reason.appt': 'appt reason',
+        'name.vehicle': 'vehicle name',
+        'year.vehicle': 'vehicle year',
+        'location.store': 'store location',
+    },
+}
 domain_list = ['uber_lyft', 'movie_ticket', 'restaurant_reservation',
                'coffee_ordering', 'pizza_ordering', 'auto_repair']
 
 
 def identify_domain(text):
-    for domain in domain_list:
-        if domain in text:
-            return domain
-    return ''
+    return next((domain for domain in domain_list if domain in text), '')
 
 
 def build_bs_text(bs_dict, bs_name_list, bs_domain):
     if len(bs_dict) == 0 or len(bs_name_list) == 0 or bs_domain == '':
         return '', ''  # empty belief state text
-    bs_domain = '[' + bs_domain + ']'
-    bs_text = bs_domain + ' '
-    bsdx_text = bs_domain + ' '
+    bs_domain = f'[{bs_domain}]'
+    bs_text = f'{bs_domain} '
+    bsdx_text = f'{bs_domain} '
     for name in bs_name_list:
-        bs_text += name + ' ' + bs_dict[name].strip() + ' '
-        bsdx_text += name + ' '
+        bs_text += f'{name} {bs_dict[name].strip()} '
+        bsdx_text += f'{name} '
     bs_text = ' '.join(bs_text.split()).strip(',').strip()
     bsdx_text = ' '.join(bsdx_text.split()).strip(',').strip()
     return bs_text, bsdx_text
@@ -93,9 +97,6 @@ def extract_one_uttr_bs(prev_bs_dict, prev_bs_list, prev_domain, usr_dict):
             item_domain = identify_domain(slot)
             if res_domain == '':
                 res_domain = item_domain  # update domain
-            else:
-                pass
-
             match_flag = False
             for key in domain_term_dict[item_domain]:
                 if key in slot:
@@ -105,9 +106,7 @@ def extract_one_uttr_bs(prev_bs_dict, prev_bs_list, prev_domain, usr_dict):
             if match_flag:  # find valid slot
                 curr_bs_dict[slot] = value.strip(',').strip()
         for key in curr_bs_dict:
-            if key in res_bs_dict:
-                pass
-            else:
+            if key not in res_bs_dict:
                 res_bs_list.append(key)
             res_bs_dict[key] = curr_bs_dict[key]  # update belief state
 
@@ -185,8 +184,6 @@ def process_file(in_f):
         one_session_list = build_session_list(item)
         if len(one_session_list) > 0:
             all_session_list.append(one_session_list)
-        else:
-            pass
     res_list = []
     for sess in all_session_list:
         one_res_dict = process_session(sess)
@@ -201,8 +198,8 @@ class TaskMaster(Dataset):
         self.idx = 0
         self.examples = []
 
-        self_dialogue_list = process_file(data_path + '/self-dialogs.json')
-        woz_dialogue_list = process_file(data_path + '/woz-dialogs.json')
+        self_dialogue_list = process_file(f'{data_path}/self-dialogs.json')
+        woz_dialogue_list = process_file(f'{data_path}/woz-dialogs.json')
         all_data_list = self_dialogue_list + woz_dialogue_list
         random.shuffle(all_data_list)
 

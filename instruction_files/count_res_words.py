@@ -69,7 +69,7 @@ def list_tostring(classes):
     if len(classes)<2:
         return ' '.join(classes)
     elif len(classes)==2:
-        return classes[0] + ' and ' + classes[1]
+        return f'{classes[0]} and {classes[1]}'
     else:
         return ', '.join(classes[:-1]) + ' and ' + classes[-1]
 
@@ -125,7 +125,9 @@ class Generator(GeneratorBasic):
                 split = dp.get('split', 'unspecified')
                 if type(dp['context']) is str:
                     dp['context'] = [dp['context']]
-                context = (' '+settings.EOT_SEP+ ' ').join(dp['context'][-settings.MAX_CONTEXT_NUMUTTERANCE:])
+                context = f' {settings.EOT_SEP} '.join(
+                    dp['context'][-settings.MAX_CONTEXT_NUMUTTERANCE :]
+                )
                 response = dp['response']
                 # if 'personality' in dp:
                 #     context =  settings.PERSONA_SEP + " " +' '.join(dp['personality'])+" Dialogue context: "+context
@@ -134,14 +136,16 @@ class Generator(GeneratorBasic):
                 #     context = 'Dialogue context: ' + context
                 # text = context + ". Keywords to use in generation: "+ keywords_string
                 context_str = ' '.join(context.split()[-settings.MAX_DIALOGUE_LENGTH:])
-                text =  settings.CONTEXT_SEP +" "+ context_str + " " + settings.RESPONSE_SEP + " " + response + " " + settings.EOD_SEP
-                post_prompts = [settings.QUESTION_SEP+" Given this context, the length of the final response is",
-                                settings.QUESTION_SEP+" Generate length of the response for the provided context",
-                                settings.QUESTION_SEP+" Generate length of the final utterance in the provided conversationi",
-                                settings.QUESTION_SEP+" Given this context what is the length of the final response to the context",
-                                settings.QUESTION_SEP+" Here is length of the response in the context"]
-                
-                text = text +' '+ random.choice(post_prompts)
+                text = f"{settings.CONTEXT_SEP} {context_str} {settings.RESPONSE_SEP} {response} {settings.EOD_SEP}"
+                post_prompts = [
+                    f"{settings.QUESTION_SEP} Given this context, the length of the final response is",
+                    f"{settings.QUESTION_SEP} Generate length of the response for the provided context",
+                    f"{settings.QUESTION_SEP} Generate length of the final utterance in the provided conversationi",
+                    f"{settings.QUESTION_SEP} Given this context what is the length of the final response to the context",
+                    f"{settings.QUESTION_SEP} Here is length of the response in the context",
+                ]
+
+                text = f'{text} {random.choice(post_prompts)}'
                 text = re.sub(' +', ' ', text)
                 output = [len(response.split())]
                 sequences.append({'text':text, 'output': output, 'index':index, 'metadata':{'context': dp['context'], 'response':dp['response']}, 'split':split, 'dataset':dataset_reader.name})

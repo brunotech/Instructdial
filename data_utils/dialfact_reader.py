@@ -25,8 +25,7 @@ LOGGER = logging.getLogger(__name__)
 def get_json_lines(inp_file):
     lines = []
     with jsonlines.open(inp_file) as reader:
-        for obj in reader:
-            lines.append(obj)
+        lines.extend(iter(reader))
     return lines
 
 # def get_json_lines(inp_file):
@@ -47,7 +46,7 @@ class DialfactDataset(Dataset):
         self.labels = ['supports', 'refutes', 'not enough info']
         self.name = 'dnli'
 
-        if split == 'train' or split == 'dev':
+        if split in ['train', 'dev']:
             data = get_json_lines('./datasets/dialfact/valid_split.jsonl')
             if split == 'train':
                 data = data[:int(len(data)//2)]
@@ -56,15 +55,16 @@ class DialfactDataset(Dataset):
         if split == 'test':
             data = get_json_lines('./datasets/dialfact/test_split.jsonl')
 
-        for i, odp in enumerate(tqdm(data)):
+        for odp in tqdm(data):
             # print(odp)
             # import pdb;pdb.set_trace()
-            dialogue_context = [t for t in odp['context']]
-            dp = dict()
-            dp['context'] = dialogue_context
-            dp['response'] = odp['response']
-            dp['label'] = odp['response_label'].lower()
-            dp.update(odp)
+            dialogue_context = list(odp['context'])
+            dp = {
+                'context': dialogue_context,
+                'response': odp['response'],
+                'label': odp['response_label'].lower(),
+            }
+            dp |= odp
             self.examples.append(dp)
 
 

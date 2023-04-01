@@ -87,10 +87,7 @@ def parse_usr_goal(text):
 
 def update_belief_state(prev_bs_list, text):
     res_list = prev_bs_list.copy()
-    prev_slot_set = set()
-    for item in res_list:
-        prev_slot_set.add(item[0])
-
+    prev_slot_set = {item[0] for item in res_list}
     res_slot_set = prev_slot_set.copy()
     curr_bs_list = parse_usr_goal(text)
     for item in curr_bs_list:
@@ -109,11 +106,9 @@ def update_belief_state(prev_bs_dict, prev_bs_name_list, text):
         raise Exception()
     for item in curr_bs_list:
         slot, value = item
-        if slot in res_bs_dict:
-            res_bs_dict[slot] = value  # update value
-        else:
+        if slot not in res_bs_dict:
             res_bs_name_list.append(slot)
-            res_bs_dict[slot] = value  # add new value
+        res_bs_dict[slot] = value  # update value
     return res_bs_dict, res_bs_name_list
 
 
@@ -133,26 +128,20 @@ def parse_usr_belief_state(prev_bs_dict, prev_bs_name_list, text, domain):
             slot = token_map_dict[name]
         except KeyError:
             slot = name
-        bs_text += slot + ' ' + bs_dict[name] + ' '
-        bsdx_text += slot + ' '
+        bs_text += f'{slot} {bs_dict[name]} '
+        bsdx_text += f'{slot} '
     bs_text = bs_text.strip().strip(',').strip()
     bsdx_text = bsdx_text.strip().strip(',').strip()
-    if len(bs_text) == 0:
-        bs_text = ''
-    else:
-        bs_text = domain + ' ' + bs_text
-    if len(bsdx_text) == 0:
-        bsdx_text = ''
-    else:
-        bsdx_text = domain + ' ' + bsdx_text.strip()
+    bs_text = '' if len(bs_text) == 0 else f'{domain} {bs_text}'
+    bsdx_text = '' if len(bsdx_text) == 0 else f'{domain} {bsdx_text.strip()}'
     return ' '.join(bs_text.split()).strip(), ' '.join(bsdx_text.split()).strip(), bs_dict, bs_name_list
 
 
 def parse_one_agent_action(text):
     item_list = text.split('(')
     assert len(item_list) >= 2
-    action_type = '[' + item_list[0].strip() + ']'
-    action_text = action_type + ' '
+    action_type = f'[{item_list[0].strip()}]'
+    action_text = f'{action_type} '
     tuple_list = item_list[1].strip().strip(')').split(';')
     action_list = []
     for one_tuple in tuple_list:
@@ -172,23 +161,20 @@ def parse_agent_action(text, domain):
     for text in split_list:
         if len(text) == 0:
             break
-        else:
-            one_action_type, one_action_list = parse_one_agent_action(text)
-            try:
-                for a in one_action_list:
-                    if a in action_dict[one_action_type]:
-                        pass
-                    else:
-                        action_dict[one_action_type].append(a)
-            except KeyError:
-                action_type_list.append(one_action_type)
-                action_dict[one_action_type] = one_action_list
-    res_text = domain + ' '
+        one_action_type, one_action_list = parse_one_agent_action(text)
+        try:
+            for a in one_action_list:
+                if a not in action_dict[one_action_type]:
+                    action_dict[one_action_type].append(a)
+        except KeyError:
+            action_type_list.append(one_action_type)
+            action_dict[one_action_type] = one_action_list
+    res_text = f'{domain} '
     for key in action_type_list:
-        res_text += key + ' '
+        res_text += f'{key} '
         one_list = action_dict[key]
         for item in one_list:
-            res_text += item + ' '
+            res_text += f'{item} '
         res_text = res_text.strip().strip(',').strip() + ' '
     return ' '.join(res_text.split()).strip()
 
@@ -224,23 +210,23 @@ def process_session_list(session_list, domain):
         one_usr_uttr, one_usr_bs, one_usr_bsdx, one_system_uttr, one_system_action, \
         bs_dict, bs_name_list = zip_turn(bs_dict, bs_name_list, one_turn_list, domain)
 
-        one_turn_dict = {'turn_num': idx}
-
         context.append(one_usr_uttr)
 
-        one_turn_dict['context'] = context[:]
-        one_turn_dict['user'] = one_usr_uttr
-        one_turn_dict['response'] = one_system_uttr
-        one_turn_dict['turn_domain'] = [domain]
-        one_turn_dict['state'] = one_usr_bs
-        one_turn_dict['bsdx'] = one_usr_bsdx
-        one_turn_dict['aspn'] = one_system_action
-
+        one_turn_dict = {
+            'turn_num': idx,
+            'context': context[:],
+            'user': one_usr_uttr,
+            'response': one_system_uttr,
+            'turn_domain': [domain],
+            'state': one_usr_bs,
+            'bsdx': one_usr_bsdx,
+            'aspn': one_system_action,
+        }
         examples.append(one_turn_dict)
 
         context.append(one_system_uttr)
 
-        # res_dict['dialogue_session'].append(one_turn_dict)
+            # res_dict['dialogue_session'].append(one_turn_dict)
     return examples
 
 
@@ -263,9 +249,11 @@ class Msre2eDst(Dataset):
         self.idx = 0
         self.examples = []
 
-        taxi_res_list = process_file(data_path + '/taxi_all.tsv', '[taxi]')
-        movie_res_list = process_file(data_path + '/movie_all.tsv', '[movie]')
-        restaurant_res_list = process_file(data_path + '/restaurant_all.tsv', '[restaurant]')
+        taxi_res_list = process_file(f'{data_path}/taxi_all.tsv', '[taxi]')
+        movie_res_list = process_file(f'{data_path}/movie_all.tsv', '[movie]')
+        restaurant_res_list = process_file(
+            f'{data_path}/restaurant_all.tsv', '[restaurant]'
+        )
 
         all_data_list = taxi_res_list + movie_res_list + restaurant_res_list
 

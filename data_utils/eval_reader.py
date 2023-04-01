@@ -46,9 +46,7 @@ class EvalDataset(Dataset):
             else:
                 # fed_dialog
                 dialog = sample['dialog']
-                context = []
-                for turn in dialog[:-1]:
-                    context.append(turn['text'])
+                context = [turn['text'] for turn in dialog[:-1]]
                 response = dialog[-1]['text']
             persona = None
             knowledge = None
@@ -63,11 +61,7 @@ class EvalDataset(Dataset):
                     else:
                         persona = sample['human_persona'].split('\n')
 
-            if 'model' in sample:
-                model = sample['model']
-            else:
-                model = 'Dummy'
-
+            model = sample['model'] if 'model' in sample else 'Dummy'
             annotation = sample['annotations']
             score = {}
             qualities = []
@@ -76,16 +70,16 @@ class EvalDataset(Dataset):
                 qualities.append(quality.lower())
 
                 all_scores.append(np.mean(score_list))
-            
+
             # check if response, context are empty
-            if ' '.join(context).strip() == '':
+            if not ' '.join(context).strip():
                 context = ['']
                 print('No ctx')
-            
+
             if response.strip() == '':
                 response = ''
                 print('No response')
-            
+
             samples.append(
                 {
                     'd_id': sample['dialogue_id'],
@@ -125,7 +119,7 @@ class EvalDataset(Dataset):
             'humod',
             'topical-usr'
         ]
-        base_dir = Path(base_dir + '/dstc10_format')
+        base_dir = Path(f'{base_dir}/dstc10_format')
         for dataset in datasets:
             with (base_dir / f'{dataset}_eval.json').open() as f:
 

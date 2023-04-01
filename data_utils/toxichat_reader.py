@@ -29,7 +29,8 @@ class ToxichatDataset(Dataset):
         self.examples = []
 
         conversations_data, header = get_conversation_data_from_OC_S_file(
-            os.path.join(data_path, 'OC_S_{}.csv'.format(split)))
+            os.path.join(data_path, f'OC_S_{split}.csv')
+        )
 
         for item in conversations_data:
             for comment in item.utterance_data:
@@ -66,10 +67,6 @@ class Conversation_Data(object):
                     # The rows here is a tuple of (post, tuple of 5 labels with offend label at position 0)
                     (u_toward, u_response), stance_label = rows
                     u_data = {"id": 1, "stance": stance_label, "comment": f"{u_toward} [SEP] {u_response}"}
-                    self.utterance_data = [u_data]
-
-                    # initialize everything else to None
-                    self.subreddit, self.sample_type, self.thread_id, self.last_off_score = None, None, None, None
                 else:
                     # SBF data
                     self.data_source = "SBF"
@@ -77,10 +74,10 @@ class Conversation_Data(object):
                     post, labels = rows
                     off_label = labels[0]
                     u_data = {"id": 1, "off": off_label, "comment": post}
-                    self.utterance_data = [u_data]
+                self.utterance_data = [u_data]
 
-                    # initialize everything else to None
-                    self.subreddit, self.sample_type, self.thread_id, self.last_off_score = None, None, None, None
+                # initialize everything else to None
+                self.subreddit, self.sample_type, self.thread_id, self.last_off_score = None, None, None, None
             elif len(rows) == 4:
                 # OC_S data
                 self.data_source = "OC_S_flat"
@@ -105,14 +102,15 @@ class Conversation_Data(object):
             conversation_info_row = rows[0]
             # print(conversation_info_row)
             # Extract data from Utterance Annotations
-            utterance_data = list()
+            utterance_data = []
             for i, utterance_row in enumerate(utterance_rows):
                 u_id = i + 1
-                current_u_data = dict()
-                current_u_data["id"] = u_id
-                current_u_data["comment"] = utterance_row[0]
-                current_u_data["off"] = int(utterance_row[1])
-                current_u_data["targets"] = process_target_annotation(utterance_row[2])
+                current_u_data = {
+                    "id": u_id,
+                    "comment": utterance_row[0],
+                    "off": int(utterance_row[1]),
+                    "targets": process_target_annotation(utterance_row[2]),
+                }
                 for j in range(1, u_id):
                     current_u_data[f"{j}stance"] = process_stance_annotation(utterance_row[2 + j])
                 utterance_data.append(current_u_data)
@@ -247,8 +245,8 @@ class Conversation_Data(object):
             from_id -= 1
             assert from_id < len(self.utterance_data)
             u_data = self.utterance_data[from_id]
-        u_data.setdefault(f"{to_id}stance_prediction", list())
-        u_data.setdefault(f"{to_id}stance_prediction_score", list())
+        u_data.setdefault(f"{to_id}stance_prediction", [])
+        u_data.setdefault(f"{to_id}stance_prediction_score", [])
         u_data[f"{to_id}stance_prediction"].append(prediction)
         u_data[f"{to_id}stance_prediction_score"].append(score)
         return None
@@ -269,9 +267,9 @@ class Conversation_Data(object):
                 return None, None, None
             u_data = self.utterance_data[from_id]
             n_previous = from_id + 1
-        predictions = list()
-        scores = list()
-        labels = list()
+        predictions = []
+        scores = []
+        labels = []
         for j in range(1, n_previous):
             if f"{j}stance_prediction" not in u_data:
                 continue
@@ -285,13 +283,17 @@ class Conversation_Data(object):
     def get_stance_prediction(self, from_id, to_id):
         # Get the stance prediction for the given pair of ids
         if from_id == "dgpt":
-            if f"{to_id}stance_prediction" not in self.dgpt_resp_data:
-                return None
-            return self.dgpt_resp_data[f"{to_id}stance_prediction"]
-        if from_id == "gpt3":
-            if f"{to_id}stance_prediction" not in self.gpt3_resp_data:
-                return None
-            return self.gpt3_resp_data[f"{to_id}stance_prediction"]
+            return (
+                None
+                if f"{to_id}stance_prediction" not in self.dgpt_resp_data
+                else self.dgpt_resp_data[f"{to_id}stance_prediction"]
+            )
+        elif from_id == "gpt3":
+            return (
+                None
+                if f"{to_id}stance_prediction" not in self.gpt3_resp_data
+                else self.gpt3_resp_data[f"{to_id}stance_prediction"]
+            )
         from_id -= 1
         if from_id < len(self.utterance_data):
             if f"{to_id}stance_prediction" not in self.utterance_data[from_id]:
@@ -302,13 +304,17 @@ class Conversation_Data(object):
     def get_stance_prediction_score(self, from_id, to_id):
         # Get the stance prediction score for the given pair of ids
         if from_id == "dgpt":
-            if f"{to_id}stance_prediction_score" not in self.dgpt_resp_data:
-                return None
-            return self.dgpt_resp_data[f"{to_id}stance_prediction_score"]
-        if from_id == "gpt3":
-            if f"{to_id}stance_prediction_score" not in self.gpt3_resp_data:
-                return None
-            return self.gpt3_resp_data[f"{to_id}stance_prediction_score"]
+            return (
+                None
+                if f"{to_id}stance_prediction_score" not in self.dgpt_resp_data
+                else self.dgpt_resp_data[f"{to_id}stance_prediction_score"]
+            )
+        elif from_id == "gpt3":
+            return (
+                None
+                if f"{to_id}stance_prediction_score" not in self.gpt3_resp_data
+                else self.gpt3_resp_data[f"{to_id}stance_prediction_score"]
+            )
         from_id -= 1
         if from_id < len(self.utterance_data):
             if f"{to_id}stance_prediction_score" not in self.utterance_data[from_id]:
@@ -322,17 +328,26 @@ class Conversation_Data(object):
             prefix_string = "** " if u_data["id"] == u_id else ""
             logging.info(
                 f"{prefix_string}{u_data['off_prediction']}\t{u_data['off_prediction_score']:.4f}|{u_data['off']}\t{u_data['comment']}")
-        prefix_string = "** " if "dgpt" == u_id else ""
+        prefix_string = "** " if u_id == "dgpt" else ""
         logging.info(
             f"{prefix_string}DGPT - {self.dgpt_resp_data['off_prediction']}\t{self.dgpt_resp_data['off_prediction_score']:.4f}|{self.dgpt_resp_data['off']}\t{self.dgpt_resp_data['comment']}")
-        prefix_string = "** " if "gpt3" == u_id else ""
+        prefix_string = "** " if u_id == "gpt3" else ""
         logging.info(
             f"{prefix_string}GPT3 - {self.gpt3_resp_data['off_prediction']}\t{self.gpt3_resp_data['off_prediction_score']:.4f}|{self.gpt3_resp_data['off']}\t{self.gpt3_resp_data['comment']}\n")
 
     def log_stance_prediction(self, from_id, to_id):
-        analysis_csv_rows = list()
         logging.info((self.subset, self.subreddit, self.sample_type, self.thread_id, self.last_off_score))
-        analysis_csv_rows.append([(self.subset, self.subreddit, self.sample_type, self.thread_id, self.last_off_score)])
+        analysis_csv_rows = [
+            [
+                (
+                    self.subset,
+                    self.subreddit,
+                    self.sample_type,
+                    self.thread_id,
+                    self.last_off_score,
+                )
+            ]
+        ]
         for u_data in self.utterance_data:
             u_id = u_data["id"]
             if u_id < 2:
@@ -340,7 +355,7 @@ class Conversation_Data(object):
                 logging.info(f"{u_data['comment']}")
                 analysis_csv_rows.append(["", u_data['comment']])
                 continue
-            stance_predictions_and_labels_str = list()
+            stance_predictions_and_labels_str = []
             for j in range(1, u_id):
                 prefix_string = "** " if u_data["id"] == from_id and j == to_id else ""
                 if f"{j}stance_prediction" in u_data:
@@ -352,7 +367,7 @@ class Conversation_Data(object):
             logging.info(f"{stance_predictions_and_labels_str}\t{u_data['comment']}")
         n_utterances = len(self.utterance_data)
         for resp_data in [self.dgpt_resp_data, self.gpt3_resp_data]:
-            stance_predictions_and_labels_str = list()
+            stance_predictions_and_labels_str = []
             for j in range(1, n_utterances + 1):
                 prefix_string = "** " if resp_data["id"] == from_id and j == to_id else ""
                 if f"{j}stance_prediction" in resp_data:
@@ -387,9 +402,7 @@ def check_if_list_is_empty_or_empty_elements(l):
     if len(l) == 0:
         return True
     modified_l = [a for a in l if a != ""]
-    if len(modified_l) == 0:
-        return True
-    return False
+    return not modified_l
 
 
 def get_conversation_data_from_SBF_instances(SBF_instances):
@@ -407,35 +420,32 @@ def get_OC_S_flat_conversation_data_from_OC_S_comment_data(comment_data, conv_si
     if type(id) == int:
         # Remove the first emoji when creating flat OC_S data
         comment = comment[2:]
-    flat_conversation_data = Conversation_Data((comment, off_label, id, conv_signature))
-    return flat_conversation_data
+    return Conversation_Data((comment, off_label, id, conv_signature))
 
 
 def load_from_tsv_to_list_of_list(tsv_file, delimiter="\t", header_present=False):
     # Load the TSV into a list of list
-    all_rows = list()
+    all_rows = []
     with open(tsv_file, "r") as tsv_in:
         reader = csv.reader(tsv_in, delimiter=delimiter)
         if header_present:
             header = next(reader)
-        all_rows = [row for row in reader]
-    if header_present:
-        return all_rows, header
-    return all_rows
+        all_rows = list(reader)
+    return (all_rows, header) if header_present else all_rows
 
 
 def get_conversation_data_from_OC_S_file(OC_S_file, flat_OC_S=False):
     dataset_rows, header = load_from_tsv_to_list_of_list(OC_S_file, delimiter=",", header_present=True)
     # header = ['utterance', 'uOff', 'uOffTarget', 'u1stance', 'u2stance', 'u3stance', 'resp_coherence']
     logging.info(f"DATASET ROWS = {len(dataset_rows)}")
-    accumulated_rows = list()
-    conversations_data = list()
+    accumulated_rows = []
+    conversations_data = []
     for row in dataset_rows:
         if check_if_list_is_empty_or_empty_elements(row):
             # create conversation
             conversations_data.append(Conversation_Data(accumulated_rows))
             # reset row accumulator
-            accumulated_rows = list()
+            accumulated_rows = []
         else:
             accumulated_rows.append(row)
     if len(accumulated_rows) > 0:
@@ -443,8 +453,8 @@ def get_conversation_data_from_OC_S_file(OC_S_file, flat_OC_S=False):
         conversations_data.append(Conversation_Data(accumulated_rows))
     logging.info(f"Conversation Data = {len(conversations_data)}")
     if flat_OC_S:
-        logging.info(f"Flattening OC_S data..")
-        flat_conversations_data = list()
+        logging.info("Flattening OC_S data..")
+        flat_conversations_data = []
         for conversation_data in conversations_data:
             # Get the conversation signature from the original object
             signature = (conversation_data.subreddit, conversation_data.sample_type, conversation_data.thread_id,
@@ -452,14 +462,22 @@ def get_conversation_data_from_OC_S_file(OC_S_file, flat_OC_S=False):
             # For each pairwise stance variable create a new conversation
 
             # For each utterance and response create a new conversation_data similar to "SBF"
-            for utterance_data in conversation_data.utterance_data:
-                flat_conversations_data.append(
-                    get_OC_S_flat_conversation_data_from_OC_S_comment_data(utterance_data, signature))
-            # Add one flat conversation_data for dgpt response and gpt3 response
-            flat_conversations_data.append(
-                get_OC_S_flat_conversation_data_from_OC_S_comment_data(conversation_data.dgpt_resp_data, signature))
-            flat_conversations_data.append(
-                get_OC_S_flat_conversation_data_from_OC_S_comment_data(conversation_data.gpt3_resp_data, signature))
+            flat_conversations_data.extend(
+                get_OC_S_flat_conversation_data_from_OC_S_comment_data(
+                    utterance_data, signature
+                )
+                for utterance_data in conversation_data.utterance_data
+            )
+            flat_conversations_data.extend(
+                (
+                    get_OC_S_flat_conversation_data_from_OC_S_comment_data(
+                        conversation_data.dgpt_resp_data, signature
+                    ),
+                    get_OC_S_flat_conversation_data_from_OC_S_comment_data(
+                        conversation_data.gpt3_resp_data, signature
+                    ),
+                )
+            )
         logging.info(f"Final flat conversations = {len(flat_conversations_data)}")
         conversations_data = flat_conversations_data
 
@@ -470,14 +488,14 @@ def get_pairwise_stance_conversation_data_from_OC_S_file(OC_S_file):
     dataset_rows, header = load_from_tsv_to_list_of_list(OC_S_file, delimiter=",", header_present=True)
     # header = ['utterance', 'uOff', 'uOffTarget', 'u1stance', 'u2stance', 'u3stance', 'resp_coherence']
     logging.info(f"DATASET ROWS = {len(dataset_rows)}")
-    accumulated_rows = list()
-    conversations_data = list()
+    accumulated_rows = []
+    conversations_data = []
     for row in dataset_rows:
         if check_if_list_is_empty_or_empty_elements(row):
             # create conversation
             conversations_data.append(Conversation_Data(accumulated_rows))
             # reset row accumulator
-            accumulated_rows = list()
+            accumulated_rows = []
         else:
             accumulated_rows.append(row)
     if len(accumulated_rows) > 0:
@@ -486,10 +504,10 @@ def get_pairwise_stance_conversation_data_from_OC_S_file(OC_S_file):
     logging.info(f"Conversation Data = {len(conversations_data)}")
 
     # Now we convert the full conversations data into pairwise stance conversation data
-    new_pairwise_stance_convs = list()
+    new_pairwise_stance_convs = []
     for conv in conversations_data:
-        stance_labels = list()
-        stance_u_pairs = list()
+        stance_labels = []
+        stance_u_pairs = []
         for current_u_data in conv.utterance_data:
             u_id = current_u_data["id"]
             u = current_u_data["comment"][2:].strip()
@@ -518,14 +536,17 @@ def get_pairwise_stance_conversation_data_from_OC_S_file(OC_S_file):
             stance_labels.append(normalize_stance_label(gpt3_stance_label))
             stance_u_pairs.append((u_toward, u_gpt3))
         # Create conversation data from stance_labels and stance_u_pairs
-        for stance_u_pair, stance_label in zip(stance_u_pairs, stance_labels):
-            new_pairwise_stance_convs.append(Conversation_Data((stance_u_pair, stance_label)))
-
+        new_pairwise_stance_convs.extend(
+            Conversation_Data((stance_u_pair, stance_label))
+            for stance_u_pair, stance_label in zip(
+                stance_u_pairs, stance_labels
+            )
+        )
     return new_pairwise_stance_convs, header
 
 
 def get_save_lists_from_conv_data(conversation_data):
-    save_rows = list()
+    save_rows = []
     for conv in conversation_data:
         save_rows.extend(conv.conversation_rows)
         save_rows.append([])
@@ -534,19 +555,19 @@ def get_save_lists_from_conv_data(conversation_data):
 
 def normalize_targets(targets):
     if len(targets) == 0:
-        return list()
+        return []
     return [TARGET_GROUPS_TO_ID[group] for group in targets]
 
 
 def create_instances_from_convs(conversations_data, stance=False):
-    instances = list()
+    instances = []
     for conv in conversations_data:
         if conv.data_source == "OC_S":
             subreddit, sample_type, thread_id = conv.subreddit, conv.sample_type, conv.thread_id
             # Extract conversational utterances and off_labels
-            utterances = list()
-            off_labels = list()
-            off_targets = list()
+            utterances = []
+            off_labels = []
+            off_targets = []
 
             for current_u_data in conv.utterance_data:
                 # u_id = current_u_data["id"]
@@ -562,17 +583,34 @@ def create_instances_from_convs(conversations_data, stance=False):
             gpt3_off_targets = off_targets + [normalize_targets(conv.gpt3_resp_data["targets"])]
 
             if not stance:
-                # No stance required. Directly update the instance list
-                instances.append({"source": conv.data_source, "subreddit": subreddit, "sample_type": sample_type,
-                                  "thread_id": thread_id, "resp_type": "dgpt", "utterances": dgpt_utterances,
-                                  "off_labels": dgpt_off_labels, "off_targets": dgpt_off_targets})
-                instances.append({"source": conv.data_source, "subreddit": subreddit, "sample_type": sample_type,
-                                  "thread_id": thread_id, "resp_type": "gpt3", "utterances": gpt3_utterances,
-                                  "off_labels": gpt3_off_labels, "off_targets": gpt3_off_targets})
+                instances.extend(
+                    (
+                        {
+                            "source": conv.data_source,
+                            "subreddit": subreddit,
+                            "sample_type": sample_type,
+                            "thread_id": thread_id,
+                            "resp_type": "dgpt",
+                            "utterances": dgpt_utterances,
+                            "off_labels": dgpt_off_labels,
+                            "off_targets": dgpt_off_targets,
+                        },
+                        {
+                            "source": conv.data_source,
+                            "subreddit": subreddit,
+                            "sample_type": sample_type,
+                            "thread_id": thread_id,
+                            "resp_type": "gpt3",
+                            "utterances": gpt3_utterances,
+                            "off_labels": gpt3_off_labels,
+                            "off_targets": gpt3_off_targets,
+                        },
+                    )
+                )
             else:
                 # If stance flag is given then collect stance labels and stance u_id pairs
-                stance_labels = list()
-                stance_u_id_pairs = list()
+                stance_labels = []
+                stance_u_id_pairs = []
                 for current_u_data in conv.utterance_data:
                     u_id = current_u_data["id"]
                     # Ignore the first utterance
@@ -586,10 +624,10 @@ def create_instances_from_convs(conversations_data, stance=False):
                         stance_u_id_pairs.append(u_id_pair)
                 # Create stance labels and u_id pairs for DGPT and GPT3 responses
                 n_thread_utterances = len(conv.utterance_data)
-                dgpt_stance_labels = list()
-                dgpt_stance_u_id_pairs = list()
-                gpt3_stance_labels = list()
-                gpt3_stance_u_id_pairs = list()
+                dgpt_stance_labels = []
+                dgpt_stance_u_id_pairs = []
+                gpt3_stance_labels = []
+                gpt3_stance_u_id_pairs = []
                 u_id = n_thread_utterances + 1
                 for i in range(1, n_thread_utterances + 1):
                     u_id_pair = (i, u_id)
@@ -605,16 +643,34 @@ def create_instances_from_convs(conversations_data, stance=False):
                 gpt3_stance_labels = stance_labels + gpt3_stance_labels
                 gpt3_stance_u_id_pairs = stance_u_id_pairs + gpt3_stance_u_id_pairs
 
-                # Add everything to the instance list
-                instances.append({"source": conv.data_source, "subreddit": subreddit, "sample_type": sample_type,
-                                  "thread_id": thread_id, "resp_type": "dgpt", "utterances": dgpt_utterances,
-                                  "off_labels": dgpt_off_labels, "off_targets": dgpt_off_targets,
-                                  "stance_labels": dgpt_stance_labels, "stance_u_id_pairs": dgpt_stance_u_id_pairs})
-                instances.append({"source": conv.data_source, "subreddit": subreddit, "sample_type": sample_type,
-                                  "thread_id": thread_id, "resp_type": "gpt3", "utterances": gpt3_utterances,
-                                  "off_labels": gpt3_off_labels, "off_targets": gpt3_off_targets,
-                                  "stance_labels": gpt3_stance_labels, "stance_u_id_pairs": gpt3_stance_u_id_pairs})
-
+                instances.extend(
+                    (
+                        {
+                            "source": conv.data_source,
+                            "subreddit": subreddit,
+                            "sample_type": sample_type,
+                            "thread_id": thread_id,
+                            "resp_type": "dgpt",
+                            "utterances": dgpt_utterances,
+                            "off_labels": dgpt_off_labels,
+                            "off_targets": dgpt_off_targets,
+                            "stance_labels": dgpt_stance_labels,
+                            "stance_u_id_pairs": dgpt_stance_u_id_pairs,
+                        },
+                        {
+                            "source": conv.data_source,
+                            "subreddit": subreddit,
+                            "sample_type": sample_type,
+                            "thread_id": thread_id,
+                            "resp_type": "gpt3",
+                            "utterances": gpt3_utterances,
+                            "off_labels": gpt3_off_labels,
+                            "off_targets": gpt3_off_targets,
+                            "stance_labels": gpt3_stance_labels,
+                            "stance_u_id_pairs": gpt3_stance_u_id_pairs,
+                        },
+                    )
+                )
         elif conv.data_source == "OC_S_flat":
             utterances = [conv.utterance_data[0]["comment"]]
             off_labels = [conv.utterance_data[0]["off"]]
@@ -661,7 +717,7 @@ def log_TP_FP_FN_TN_from_conv_off_predictions(predictions, scores, labels, convs
     categories = ["TP", "FP", "FN", "TN"]
     category_explanations = {"TP": "prediction = 1 and label = 1", "FP": "prediction = 1 and label = 0",
                              "FN": "prediction = 0 and label = 1", "TN": "prediction = 0 and label = 0"}
-    category_instances = {category: list() for category in categories}
+    category_instances = {category: [] for category in categories}
     for conv_prediction, conv_scores, conv_label, conv in zip(predictions, scores, labels, convs):
         for index, (prediction, score, label) in enumerate(zip(conv_prediction, conv_scores, conv_label)):
             if prediction == 1 and label == 1:
@@ -682,10 +738,7 @@ def log_TP_FP_FN_TN_from_conv_off_predictions(predictions, scores, labels, convs
                 exit(1)
     # Log a sample form each category
     for category in categories:
-        if len(category_instances[category]) <= K:
-            sample_size = len(category_instances[category])
-        else:
-            sample_size = K
+        sample_size = min(len(category_instances[category]), K)
         logging.info(
             f"{category}:{category_explanations[category]}:A sample of {sample_size}/{len(category_instances[category])} instances:")
         category_sample = random.sample(category_instances[category], sample_size)

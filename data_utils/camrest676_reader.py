@@ -24,8 +24,8 @@ def update_belief_state(usr_dict, prev_bs_dict, prev_bs_name_list):
         res_dx_text = '[restaurant] '
         for name in res_bs_name_list:
             value = res_bs_dict[name]
-            res_text += name + ' = ' + value + ' , '
-            res_dx_text += name + ' , '
+            res_text += f'{name} = {value} , '
+            res_dx_text += f'{name} , '
         res_text = res_text.strip().strip(' , ').strip()
         res_dx_text = res_dx_text.strip().strip(' , ').strip()
     return res_text, res_dx_text, res_bs_dict, res_bs_name_list
@@ -65,16 +65,16 @@ def process_session(sess_list):
         one_usr_bs_reform, one_usr_bsdx_reform, bs_dict, bs_name_list = \
             update_belief_state(one_usr_dict, bs_dict, bs_name_list)
 
-        one_turn_dict = {'turn_num': idx}
-
         context.append(one_usr_uttr)
 
-        one_turn_dict['context'] = context[:]
-        one_turn_dict['user'] = one_usr_uttr
-        one_turn_dict['response'] = one_system_uttr
-        one_turn_dict['turn_domain'] = ['[restaurant]']
-        # one_turn_dict['bspn_reform'] = one_usr_bs_reform
-        one_turn_dict['state'] = restore_text(one_usr_bs_reform)
+        one_turn_dict = {
+            'turn_num': idx,
+            'context': context[:],
+            'user': one_usr_uttr,
+            'response': one_system_uttr,
+            'turn_domain': ['[restaurant]'],
+            'state': restore_text(one_usr_bs_reform),
+        }
         # one_turn_dict['bsdx_reform'] = one_usr_bsdx_reform
         one_turn_dict['bsdx'] = restore_text(one_usr_bsdx_reform)
         # one_turn_dict['aspn_reform'] = ''
@@ -84,7 +84,7 @@ def process_session(sess_list):
 
         context.append(one_system_uttr)
 
-        # res_dict['dialogue_session'].append(one_turn_dict)
+            # res_dict['dialogue_session'].append(one_turn_dict)
     return examples
 
 
@@ -108,13 +108,10 @@ class Camrest676Dataset(Dataset):
         self.idx = 0
         self.examples = []
 
-        res_list = process_file(data_path + '/CamRest676.json')
+        res_list = process_file(f'{data_path}/CamRest676.json')
         random.shuffle(res_list)
 
-        if split == 'train':
-            self.examples = res_list[:600]
-        else:
-            self.examples = res_list[600:]
+        self.examples = res_list[:600] if split == 'train' else res_list[600:]
 
 """
 if __name__ == '__main__':

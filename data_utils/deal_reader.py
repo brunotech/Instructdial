@@ -8,10 +8,10 @@ class DealDataset(Dataset):
         self.idx = 0
         self.examples = []
 
-        with open(os.path.join(data_path, split + '.txt')) as f:
-            for line in f.readlines():
+        with open(os.path.join(data_path, f'{split}.txt')) as f:
+            for line in f:
                 m = re.match(r'.*<dialogue>(.+)</dialogue>.*', line)
-                text = m.group(1)
+                text = m[1]
                 text = re.sub('<selection>|THEM:|YOU:', ' ', text)
                 text = re.sub('  +', ' ', text).strip()
                 turns = [t.strip() for t in text.split('<eos>') if len(t.strip()) > 0]

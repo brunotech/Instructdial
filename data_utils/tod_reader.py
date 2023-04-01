@@ -62,7 +62,9 @@ def load_tod(data_path, ds_name, split):
     datasets = {}
     cand_uttr_sys = set()
 
-    data_trn, data_dev, data_tst, data_meta = globals()["prepare_data_{}".format(ds_name)](args_dict)
+    data_trn, data_dev, data_tst, data_meta = globals()[
+        f"prepare_data_{ds_name}"
+    ](args_dict)
     # held-out mwoz for now
     if ds_name in ast.literal_eval(args_dict['holdout_dataset']):
         datasets[ds_name] = {"train": data_trn, "dev": data_dev, "test": data_tst, "meta": data_meta}

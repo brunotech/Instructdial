@@ -9,12 +9,13 @@ class TimeDialDataset(Dataset):
 
         with open(f'{data_path}/test.json') as f:
             data = json.load(f)
-            for sample in data:
-                self.examples.append({
+            self.examples.extend(
+                {
                     'dialog': sample['conversation'],
                     'answer': sample['correct1'],
                     'correct': [sample['correct1'], sample['correct2']],
-                    'incorrect': [sample['incorrect1'], sample['incorrect2']]
-
-                })
+                    'incorrect': [sample['incorrect1'], sample['incorrect2']],
+                }
+                for sample in data
+            )
 

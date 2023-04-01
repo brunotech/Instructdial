@@ -1,5 +1,5 @@
 import os
-import logging 
+import logging
 import argparse
 from tqdm import tqdm
 import torch
@@ -33,7 +33,7 @@ parser.add_argument(
 parser.add_argument(
     '-emb','--emb_size', help='Embedding size', required=False, type=int, default=400)
 parser.add_argument(
-    '-clip','--grad_clip', help='gradient clipping', required=False, default=1, type=int) 
+    '-clip','--grad_clip', help='gradient clipping', required=False, default=1, type=int)
 parser.add_argument(
     '-tfr','--teacher_forcing_ratio', help='teacher_forcing_ratio', type=float, required=False, default=0.5)
 parser.add_argument(
@@ -76,11 +76,11 @@ parser.add_argument(
 parser.add_argument(
     "--output_mode", default="classification", type=str, help="")
 parser.add_argument(
-        "--max_steps", default=-1, type=int, help="If > 0: set total number of training steps to perform. Override num_train_epochs.",) 
+        "--max_steps", default=-1, type=int, help="If > 0: set total number of training steps to perform. Override num_train_epochs.",)
 parser.add_argument(
         "--rand_seed", default=0, type=int, help="")
 parser.add_argument(
-        "--fix_rand_seed", action="store_true", help="fix random seed for training",) 
+        "--fix_rand_seed", action="store_true", help="fix random seed for training",)
 parser.add_argument(
         "--nb_runs", default=1, type=int, help="number of runs to conduct during training")
 parser.add_argument(
@@ -89,8 +89,8 @@ parser.add_argument(
         "--max_seq_length", default=512, type=int, help="")
 parser.add_argument(
         "--input_name", default="context", type=str, help="")
-    
-    
+
+
 ## Dataset or Input/Output Setting
 parser.add_argument(
     '-dpath','--data_path', help='path to dataset folder, need to change to your local folder', 
@@ -126,11 +126,11 @@ parser.add_argument(
 parser.add_argument(
         "--train_data_ratio", default=1.0, type=float, help="")
 parser.add_argument(
-        "--domain_act", action="store_true", help="",)  
+        "--domain_act", action="store_true", help="",)
 parser.add_argument(
-        "--only_last_turn", action="store_true", help="",)  
+        "--only_last_turn", action="store_true", help="",)
 parser.add_argument(
-        "--error_analysis", action="store_true", help="",) 
+        "--error_analysis", action="store_true", help="",)
 parser.add_argument(
         "--not_save_model", action="store_true", help="")
 parser.add_argument(
@@ -151,19 +151,19 @@ parser.add_argument(
 parser.add_argument(
         "--oracle_domain", action="store_true", help="",)
 parser.add_argument(
-        "--more_linear_mapping", action="store_true", help="",) 
+        "--more_linear_mapping", action="store_true", help="",)
 parser.add_argument(
-        "--gate_supervision_for_dst", action="store_true", help="",) 
+        "--gate_supervision_for_dst", action="store_true", help="",)
 parser.add_argument(
-        "--sum_token_emb_for_value", action="store_true", help="",) 
+        "--sum_token_emb_for_value", action="store_true", help="",)
 parser.add_argument(
         "--nb_neg_sample_rs", default=0, type=int, help="")
 parser.add_argument(
-        "--sample_negative_by_kmeans", action="store_true", help="",) 
+        "--sample_negative_by_kmeans", action="store_true", help="",)
 parser.add_argument(
         "--nb_kmeans", default=1000, type=int, help="")
 parser.add_argument(
-        "--bidirect", action="store_true", help="",)       
+        "--bidirect", action="store_true", help="",)
 parser.add_argument(
     '--rnn_type', help='rnn type ["gru", "lstm"]', required=False, type=str, default="gru")
 parser.add_argument(
@@ -171,25 +171,27 @@ parser.add_argument(
 parser.add_argument(
     '--zero_init_rnn',action='store_true', help="set initial hidden of rnns zero")
 parser.add_argument(
-        "--do_zeroshot", action="store_true", help="",)  
+        "--do_zeroshot", action="store_true", help="",)
 parser.add_argument(
-        "--oos_threshold", action="store_true", help="",) 
+        "--oos_threshold", action="store_true", help="",)
 parser.add_argument(
         "--ontology_version", default="", type=str, help="1.0 is the cleaned version but not used")
 parser.add_argument(
-        "--dstlm", action="store_true", help="",) 
+        "--dstlm", action="store_true", help="",)
 parser.add_argument(
     '-viz','--vizualization', help='vizualization', type=int, required=False, default=0)
 
 
-    
+
 args = vars(parser.parse_args())
 # args = parser.parse_args()
-print(str(args))
+print(args)
 
 # check output_dir
 if os.path.exists(args["output_dir"]) and os.listdir(args["output_dir"]) and args["do_train"] and (not args["overwrite"]):
-    raise ValueError("Output directory ({}) already exists and is not empty.".format(args["output_dir"]))
+    raise ValueError(
+        f'Output directory ({args["output_dir"]}) already exists and is not empty.'
+    )
 os.makedirs(args["output_dir"], exist_ok=True)
 
 # Dictionary Predefined

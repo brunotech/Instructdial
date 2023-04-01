@@ -5,9 +5,9 @@ from pathlib import Path
 class DialogSumDataset(Dataset):
     def __init__(self, data_path: str, max_seq_length=512, split='test'):
         self.examples = []
-         
+
         with open(f'{data_path}/dialogsum.{split}.jsonl') as f:
-            for line in f.readlines():
+            for line in f:
                 data = json.loads(line)
                 if split == 'test':
                     self.examples.append({

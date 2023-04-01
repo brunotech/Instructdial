@@ -21,11 +21,7 @@ class FlodialDataset(Dataset):
         with open(os.path.join(data_path, 'FloDial-dataset', 'dialogs', 'u-flo.json')) as f:
             splits = json.load(f)
 
-        if split == 'train':
-            idxs = set(splits['trn'])
-        else:
-            idxs = set(splits['val'])
-
+        idxs = set(splits['trn']) if split == 'train' else set(splits['val'])
         schemas = {
             'brake_problem': read_schema(data_path, 'brake_problem.json'),
             'car_electrical_failure': read_schema(data_path, 'car_electrical_failure.json'),
@@ -55,10 +51,10 @@ class FlodialDataset(Dataset):
                         m2 = re.match(r'faq-([0-9])', grounded_doc_id)
 
                         if m1:
-                            idx = m1.group(1)
+                            idx = m1[1]
                             schema = schema_data['nodes'][idx]
                         if m2:
-                            idx = m2.group(1)
+                            idx = m2[1]
                             schema = schema_data['supporting_faqs'][int(idx)]
 
                     self.examples.append({

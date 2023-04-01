@@ -40,9 +40,12 @@ def get_instructions(instruction_files):
 
     useful_files = []
     for filename in instruction_files:
-        for fname in allinstruction_files:
-            if filename == fname and not any(c in fname for c in ['swo', 'swp']):
-                useful_files.append(fname)
+        useful_files.extend(
+            fname
+            for fname in allinstruction_files
+            if filename == fname
+            and all(c not in fname for c in ['swo', 'swp'])
+        )
     print('useful_files for instructions', useful_files)
     instructions_modules = []
     for fname in useful_files:
@@ -50,7 +53,7 @@ def get_instructions(instruction_files):
         # fdata = json.load(open(join(instruction_folder, fname), 'r'))
         modulename = fname.replace('.py', '')#join(instruction_folder, fname)
         # module = importlib.import_module(instruction_files.modulename, package='instruction_files')
-        module = importlib.import_module('instruction_files.'+modulename)
+        module = importlib.import_module(f'instruction_files.{modulename}')
         instructions_modules.append(module)
 
     return instructions_modules
@@ -100,27 +103,26 @@ def read_args():
 def read_examples(args):
     config = json.load(open(args.configfile, 'r'))
     LOGGER.info(config)
-        # Data readers 
     # config['datasets'] = ['eval']
     for dataset in config['datasets']:
         if dataset not in config: continue
         datasetconfig = config[dataset]
         instruction_files = datasetconfig['instruction_files']
-        if dataset=='intent-clinc':
+        if dataset == 'eval':
+            dataset_reader = eval_reader.EvalDataset(settings.EVAL_PATH)
+        elif dataset == 'intent-clinc':
             token_vocab_name = os.path.basename(datasetconfig['token_vocab_path']).replace(".txt", "")
             dataset_reader = dialoglue_reader.IntentDataset(settings.DIALOGUE_PATH+datasetconfig['train_data_path'],
                                         datasetconfig['max_seq_length'],
                                         token_vocab_name)
-        if dataset=='slot-restaurant8k':
+        elif dataset == 'slot-restaurant8k':
             token_vocab_name = os.path.basename(datasetconfig['token_vocab_path']).replace(".txt", "")
             dataset_reader = dialoglue_reader.SlotDataset(settings.DIALOGUE_PATH+datasetconfig['train_data_path'],
                                         datasetconfig['max_seq_length'],
                                         token_vocab_name)
-        if dataset=='wow':
+        elif dataset == 'wow':
             dataset_reader = wow_reader.WoWDataset(settings.WOW_PATH+datasetconfig['train_data_path'],
                                         datasetconfig['max_seq_length'])
-        if dataset == 'eval':
-            dataset_reader = eval_reader.EvalDataset(settings.EVAL_PATH)
         instructions_all = get_instructions(instruction_files)
 
         print_examples(dataset_reader)
@@ -134,7 +136,7 @@ def test_instructions(args):
     isExist = os.path.exists(args.tasks_output_folder)
     if not isExist:
         os.makedirs(args.tasks_output_folder)
-        print("The new output directory is created!")   
+        print("The new output directory is created!")
     taskconfig = config.get(task, None)
     if taskconfig is not None:
         instruction_files = taskconfig.get('instruction_files', [])
@@ -149,7 +151,7 @@ def test_instructions(args):
     # import pdb;pdb.set_trace()
     for i, instructionmodule in enumerate(instructions_all):
         data_readers = []
-        for d, dataset in enumerate(datasets):
+        for dataset in datasets:
             dataset_reader = get_reader(args, dataset)
             dataset_reader.name = dataset
             data_readers.append(dataset_reader)

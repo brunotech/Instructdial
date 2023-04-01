@@ -8,7 +8,7 @@ from .utils_function import get_input_example
 
 
 def read_langs_turn(args, dials, ds_name, max_line):
-    print(("Reading from {} for read_langs_turn".format(ds_name)))
+    print(f"Reading from {ds_name} for read_langs_turn")
     slot_classes = set([])
 
     data = []
@@ -34,10 +34,15 @@ def read_langs_turn(args, dials, ds_name, max_line):
                 for word in filtered_text.split():
                     if word == '[SEP]':
                         slot_name = utterance['segments'][i]['annotations'][0]['name']
-                        slots.append('B-{}'.format(slot_name))
+                        slots.append(f'B-{slot_name}')
                         slot_classes.add(slot_name)
-                        for j in range(len(utterance['segments'][i]['text'].split()) - 1):
-                            slots.append('I-{}'.format(slot_name))
+                        slots.extend(
+                            f'I-{slot_name}'
+                            for _ in range(
+                                len(utterance['segments'][i]['text'].split())
+                                - 1
+                            )
+                        )
                         i += 1
                     else:
                         slots.append('O')
@@ -58,7 +63,7 @@ def read_langs_turn(args, dials, ds_name, max_line):
 
 
 def read_langs_dial(file_name, ontology, dialog_act, max_line=None, domain_act_flag=False):
-    print(("Reading from {} for read_langs_dial".format(file_name)))
+    print(f"Reading from {file_name} for read_langs_dial")
 
     raise NotImplementedError
 
@@ -81,13 +86,15 @@ def prepare_data_taskmaster(args):
     dials_all = json.load(fr_data_woz) + json.load(fr_data_self)
 
     _example_type = "dial" if "dial" in example_type else example_type
-    pair_trn, slot_classes = globals()["read_langs_{}".format(_example_type)](args, dials_all, ds_name, max_line)
+    pair_trn, slot_classes = globals()[f"read_langs_{_example_type}"](
+        args, dials_all, ds_name, max_line
+    )
     pair_dev = []
     pair_tst = []
 
-    print("Read {} pairs train from {}".format(len(pair_trn), ds_name))
-    print("Read {} pairs valid from {}".format(len(pair_dev), ds_name))
-    print("Read {} pairs test  from {}".format(len(pair_tst), ds_name))
+    print(f"Read {len(pair_trn)} pairs train from {ds_name}")
+    print(f"Read {len(pair_dev)} pairs valid from {ds_name}")
+    print(f"Read {len(pair_tst)} pairs test  from {ds_name}")
 
     meta_data = {"num_labels": 0,
                  "slot_classes": slot_classes}

@@ -24,10 +24,7 @@ def get_word_overlap(evidence, claim):
     evidence_words = [x for x in evidence_words if x not in STOP_WORDS]
     claim_words = claim.split()
     claim_words = [x for x in claim_words if x not in STOP_WORDS]
-    overlapped_claimwords = []
-    for x in claim_words:
-        if x in evidence_words:
-            overlapped_claimwords.append(x)
+    overlapped_claimwords = [x for x in claim_words if x in evidence_words]
     return len(overlapped_claimwords)/(len(claim_words)+0.01)
 
 def _first_val(dictionary):
@@ -80,10 +77,7 @@ def _check_truncate(vec, truncate, truncate_left=False):
         return vec
     if len(vec) <= truncate:
         return vec
-    if truncate_left:
-        return vec[-truncate:]
-    else:
-        return vec[:truncate]
+    return vec[-truncate:] if truncate_left else vec[:truncate]
 
 
 def _parse_knowledge(obs, correct_first=False):
@@ -92,8 +86,8 @@ def _parse_knowledge(obs, correct_first=False):
         # being destructive
         return list(obs['knowledge_parsed'])
 
-    checked_sentence = '{} {} {}'.format(
-        obs['title'], TOKEN_KNOWLEDGE, obs['checked_sentence']
+    checked_sentence = (
+        f"{obs['title']} {TOKEN_KNOWLEDGE} {obs['checked_sentence']}"
     )
     # grab all the nonempty knowledge
     obs_know = [k.strip() for k in obs.get('knowledge', '').split('\n')]
@@ -119,23 +113,17 @@ def _parse_knowledge(obs, correct_first=False):
     # print(obs['knowledge_parsed'][0], '--', obs['labels'][0], overlap)
     if 'no_passages_used' in  obs['knowledge_parsed'][0]:
         return None
-    if overlap<0.3: 
-        return None
-    # import pdb;pdb.set_trace()
-
-    return obs['knowledge_parsed']
+    return None if overlap<0.3 else obs['knowledge_parsed']
 
 
 def len_episode(d):
     wizard_first = 'Wizard' in d['dialog'][0]['speaker']
-    if wizard_first:
-        return (len(d['dialog']) - 1) // 2
-    return len(d['dialog']) // 2
+    return (len(d['dialog']) - 1) // 2 if wizard_first else len(d['dialog']) // 2
 
 
 def load_data(data_path):
     # 1. load from source file
-    print('loading: {}'.format(data_path))
+    print(f'loading: {data_path}')
     with open(data_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
@@ -143,19 +131,18 @@ def load_data(data_path):
     examples = []
     for episode_idx, d in enumerate(data):
         for entry_idx in range(len_episode(d)):
-            id_str = str(episode_idx) + '__' + str(entry_idx)
+            id_str = f'{str(episode_idx)}__{str(entry_idx)}'
             episode_done = entry_idx == (len_episode(d) - 1)
 
             wizard_first = 'Wizard' in d['dialog'][0]['speaker']
-            idx = entry_idx * 2 if wizard_first else (entry_idx * 2) + 1
-
             # 2.1 get knowledge
             apprentice_ret_passages = wizard_ret_passages = {}
 
+            idx = entry_idx * 2 if wizard_first else (entry_idx * 2) + 1
             if not wizard_first or idx != 0:
                 apprentice_entry = d['dialog'][idx - 1]
                 apprentice_ret_passages = apprentice_entry['retrieved_passages']
-            if idx - 2 >= 0:
+            if idx >= 2:
                 wizard_prev_entry = d['dialog'][idx - 2]
                 wizard_ret_passages = wizard_prev_entry['retrieved_passages']
 
@@ -176,13 +163,7 @@ def load_data(data_path):
             #     text = '{}\n{}'.format(chosen_topic, apprentice_entry['text'])
             # else:
             #     text = apprentice_entry['text']
-            if idx == 0:
-                text = ''
-            elif idx == 1:
-                text = apprentice_entry['text']
-            else:
-                text = apprentice_entry['text']
-
+            text = '' if idx == 0 else apprentice_entry['text']
             # 2.3 get label
             wizard_entry = d['dialog'][idx]
             labels = [wizard_entry['text']]
@@ -191,17 +172,13 @@ def load_data(data_path):
             knowledge_str = ''
             for title, passage in knowledge_dict.items():
                 for p in passage:
-                    cand = '{} {} {}'.format(title, TOKEN_KNOWLEDGE, p)
+                    cand = f'{title} {TOKEN_KNOWLEDGE} {p}'
                     knowledge_str += cand + '\n'
             if not knowledge_str.startswith(TOKEN_NOCHOSEN):
                 knowledge_str = (
-                        TOKEN_NOCHOSEN
-                        + ' '
-                        + TOKEN_KNOWLEDGE
-                        + ' '
-                        + TOKEN_NOCHOSEN
-                        + '\n'
-                        + knowledge_str
+                    f'{TOKEN_NOCHOSEN} {TOKEN_KNOWLEDGE} {TOKEN_NOCHOSEN}'
+                    + '\n'
+                    + knowledge_str
                 )
 
             # 2.5 get title and checked_sentences
@@ -217,7 +194,9 @@ def load_data(data_path):
                 'checked_sentence': sentence,
                 'id_str': id_str,
             })
-    print('loaded {} episodes with a total of {} examples'.format(episode_idx + 1, len(examples)))
+    print(
+        f'loaded {episode_idx + 1} episodes with a total of {len(examples)} examples'
+    )
     return examples
 
 
@@ -227,8 +206,7 @@ END_TOKENS = ['.', '!', '?', '...', "'", "`", '"', ")"]  # acceptable ways to en
 def fix_missing_period(line):
     """Adds a period to a line that is missing a period"""
     if line == "": return line
-    if line[-1] in END_TOKENS: return line
-    return line + " ."
+    return line if line[-1] in END_TOKENS else f"{line} ."
 
 
 def data_generator(in_file, correct_first=False, keep_last_n=99999):
@@ -283,13 +261,13 @@ def data_generator(in_file, correct_first=False, keep_last_n=99999):
         label = observation['labels'][0]#.lower()
         # label = ' '.join(word_tokenize(label))
         # label = ' '.join(label.split())
-        
+
         id_str = observation['id_str']
         knowledge = _parse_knowledge(observation, correct_first)
         if knowledge is None:
             continue
 #         knowledge = [k.lower() for k in knowledge]
-        knowledge = [k for k in knowledge]
+        knowledge = list(knowledge)
         # knowledge = [' '.join(word_tokenize(k)) for k in knowledge]
         # knowledge = [' '.join(k.split()) for k in knowledge]
         # import pdb;pdb.set_trace()
@@ -298,7 +276,7 @@ def data_generator(in_file, correct_first=False, keep_last_n=99999):
 
 def generate_data(in_file):
     file_path = '/'.join(os.path.abspath(__file__).split('/')[:-1])
-    out_file = file_path+"/parsed_" + in_file
+    out_file = f"{file_path}/parsed_{in_file}"
     print('output file', out_file)
     if out_file[-1]!='l':
         out_file+='l'

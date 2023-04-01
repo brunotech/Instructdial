@@ -44,33 +44,25 @@ def extract_wizard_act(wizard_dict, domain):
         if action_type not in action_type_dict:
             action_type_list.append(action_type)
             action_type_dict[action_type] = []
-        else:
-            pass
-
         action_value = a['args']
-        if len(action_value) == 0:
-            pass
-        else:
-            if action_value[0]['key'] == 'ref':
-                pass
-            else:
-                for item in action_value:
-                    try:
-                        slot = token_map_dict[item['key']]
-                    except KeyError:
-                        slot = item['key']
-                    if slot in action_type_dict[action_type]:
-                        pass
-                    else:
-                        action_type_dict[action_type].append(slot)
+        if (len(action_value) == 0 or action_value[0]['key'] != 'ref') and len(
+            action_value
+        ) != 0:
+            for item in action_value:
+                try:
+                    slot = token_map_dict[item['key']]
+                except KeyError:
+                    slot = item['key']
+                if slot not in action_type_dict[action_type]:
+                    action_type_dict[action_type].append(slot)
     # print (action_type_dict)
-    action_text = domain + ' '
+    action_text = f'{domain} '
     for a_type in action_type_list:
-        one_text = a_type + ' '
+        one_text = f'{a_type} '
         for a in action_type_dict[a_type]:
-            one_text += a + ' '
+            one_text += f'{a} '
         one_text = one_text.strip().strip(',').strip()
-        action_text += one_text + ' '
+        action_text += f'{one_text} '
     action_text = action_text.strip()
     action_text = ' '.join(action_text.split()).strip()
     return action_text
@@ -84,32 +76,28 @@ def update_user_belief_state(prev_bs_dict, prev_bs_name_list, usr_dict):
     for item in usr_dict['labels']['acts']:
 
         value_dict_list = item['args']
-        # print (value_dict_list)
         if len(value_dict_list) == 0:
             continue
-        else:
             # print (value_dict_list)
-            for value_dict in value_dict_list:
-                try:
-                    key, value = value_dict['key'], value_dict['val']
-                except KeyError:
-                    continue
-                if key == 'ref':
-                    continue
-                try:
-                    assert type(key) == str
-                    assert type(value) == str
-                except:
-                    continue
-                try:
-                    key = token_map_dict[key]
-                except KeyError:
-                    pass
-                if key in res_bs_name_list:
-                    pass
-                else:
-                    res_bs_name_list.append(key)
-                res_bs_dict[key] = value  # update user belief state
+        for value_dict in value_dict_list:
+            try:
+                key, value = value_dict['key'], value_dict['val']
+            except KeyError:
+                continue
+            if key == 'ref':
+                continue
+            try:
+                assert type(key) == str
+                assert type(value) == str
+            except:
+                continue
+            try:
+                key = token_map_dict[key]
+            except KeyError:
+                pass
+            if key not in res_bs_name_list:
+                res_bs_name_list.append(key)
+            res_bs_dict[key] = value  # update user belief state
     return res_bs_dict, res_bs_name_list
 
 
@@ -122,11 +110,11 @@ def zip_turn(usr_dict, system_dict, prev_bs_dict, prev_bs_name_list, domain):
         bs_text = ''
         bsdx_text = ''
     else:
-        bs_text = domain + ' '
-        bsdx_text = domain + ' '
+        bs_text = f'{domain} '
+        bsdx_text = f'{domain} '
         for slot in res_bs_name_list:
-            bs_text += slot + ' ' + res_bs_dict[slot] + ' '
-            bsdx_text += slot + ' '
+            bs_text += f'{slot} {res_bs_dict[slot]} '
+            bsdx_text += f'{slot} '
         bs_text = bs_text.strip().strip(',').strip()
         bsdx_text = bsdx_text.strip().strip(',').strip()
         bs_text = ' '.join(bs_text.split()).strip()
@@ -170,21 +158,22 @@ def process_session(session_list, domain):
         usr_uttr, bs_text, bsdx_text, bs_dict, bs_name_list, system_uttr, action_text = \
             zip_turn(usr_dict, system_dict, bs_dict, bs_name_list, domain)
 
-        one_turn_dict = {'turn_num': idx}
-
         context.append(usr_uttr)
-        one_turn_dict['context'] = context[:]
-        one_turn_dict['user'] = usr_uttr
-        one_turn_dict['response'] = system_uttr
-        one_turn_dict['turn_domain'] = [domain]
-        one_turn_dict['state'] = bs_text
-        one_turn_dict['bsdx'] = bsdx_text
-        one_turn_dict['aspn'] = action_text
+        one_turn_dict = {
+            'turn_num': idx,
+            'context': context[:],
+            'user': usr_uttr,
+            'response': system_uttr,
+            'turn_domain': [domain],
+            'state': bs_text,
+            'bsdx': bsdx_text,
+            'aspn': action_text,
+        }
         examples.append(one_turn_dict)
 
         context.append(system_uttr)
 
-        # res_dict['dialogue_session'].append(one_turn_dict)
+            # res_dict['dialogue_session'].append(one_turn_dict)
     return examples
 
 
@@ -209,13 +198,10 @@ class FramesDataset(Dataset):
         self.examples = []
 
         domain = '[booking]'
-        res_list = process_file(data_path + '/frames.json', domain)
+        res_list = process_file(f'{data_path}/frames.json', domain)
         random.shuffle(res_list)
 
-        if split == 'train':
-            self.examples = res_list[:100]
-        else:
-            self.examples = res_list[100:]
+        self.examples = res_list[:100] if split == 'train' else res_list[100:]
 
 
 """

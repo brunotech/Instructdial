@@ -16,5 +16,4 @@ class ChitChatDataset(Dataset):
             with open(os.path.join(dir_path, filename)) as f:
                 # dialogues.append(json.load(f))
                 dialogues = json.load(f)
-                for dialogue in dialogues:
-                    self.examples.append(dialogue['turns'])
+                self.examples.extend(dialogue['turns'] for dialogue in dialogues)

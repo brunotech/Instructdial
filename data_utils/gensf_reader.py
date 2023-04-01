@@ -18,17 +18,17 @@ class GensfDataset(Dataset):
         texts = []
         slotss = []
         self.examples = []
-        
+
         if domain == 'all':
             domains = ['Buses_1', 'Events_1', 'Homes_1', 'RentalCars_1']
         else:
             domains = [domain]
 
-        if split == 'train' or split == 'val':
+        if split in {'train', 'val'}:
             file = 'train_2.json' # 1/4 examples
         elif split == 'test':
             file = 'test.json'
-        
+
         for domain in domains:
             file_path = f'{data_path}/dstc8/{domain}/{file}'
             data = json.load(open(file_path))
@@ -44,9 +44,9 @@ class GensfDataset(Dataset):
                     'domain': domain,
                     'slot_to_word':slot_to_word
                 })
-            
+
         self.split = split
-        
+
         num_examples = len(self.examples)
         if split == 'train': 
             self.exampels = self.examples#[:-num_examples // 10]
@@ -82,9 +82,9 @@ class GensfDataset(Dataset):
             if word in word_to_slot:
                 slot = word_to_slot[word]
                 if cur is not None and slot == cur:
-                    slots.append("I-" + slot)
+                    slots.append(f"I-{slot}")
                 else:
-                    slots.append("B-" + slot)
+                    slots.append(f"B-{slot}")
                     cur = slot
             else:
                 slots.append("O")

@@ -5,7 +5,7 @@ from data_utils.data_reader import Dataset
 class CQADataset(Dataset):
     def __init__(self, data_path: str, data_type:str, max_seq_length=512, split='train'):
         if data_type == 'coqa':
-            if split == 'train' or split == 'dev':
+            if split in ['train', 'dev']:
                 data_path = f'{data_path}/coqa-train-v1.0.json'
             elif split == 'test':
                 data_path = f'{data_path}/coqa-dev-v1.0.json'
@@ -22,22 +22,22 @@ class CQADataset(Dataset):
                 self.examples = self.examples[-num_data//10:]
                 print(num_data, len(self.examples))
         elif data_type == 'quac':
-            if split == 'train' or split == 'dev':
+            if split in ['train', 'dev']:
                 data_path = f'{data_path}/train_v0.2.json'
             elif split == 'test':
                 data_path = f'{data_path}/val_v0.2.json'
-                
+
             with open(data_path) as f:
                 data = json.load(f)['data']
             self.process_quac(data)
 
-            if split == 'train':
-                num_data = len(self.examples)
-                self.examples = self.examples[:-num_data//10]
-            elif split == 'dev':
+            if split == 'dev':
                 num_data = len(self.examples)
                 self.examples = self.examples[-num_data//10:]
 
+            elif split == 'train':
+                num_data = len(self.examples)
+                self.examples = self.examples[:-num_data//10]
         self.split = split
     
     def process_coqa(self, data: List[dict]):

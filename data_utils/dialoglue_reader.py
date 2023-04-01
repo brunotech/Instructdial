@@ -33,7 +33,9 @@ class IntentDataset(Dataset):
         # Intent categories
         intent_vocab_path = os.path.join(data_dirname, "categories.json")
         intent_names = json.load(open(intent_vocab_path))
-        self.intent_label_to_idx = dict((label, idx) for idx, label in enumerate(intent_names))
+        self.intent_label_to_idx = {
+            label: idx for idx, label in enumerate(intent_names)
+        }
         self.intent_idx_to_label = {idx: label for label, idx in self.intent_label_to_idx.items()}
         self.examples = []
         reader = csv.reader(open(data_path))
@@ -42,13 +44,14 @@ class IntentDataset(Dataset):
         # print(self.intent_idx_to_label)
         self.intent_classes = list(self.intent_idx_to_label.values())
         self.intent_classes = [x.replace('_',' ') for x in self.intent_classes]
-        for utt, intent in tqdm(reader):
-            self.examples.append({
+        self.examples.extend(
+            {
                 "response": utt,
-                "intent_label": intent,#self.intent_label_to_idx[intent],
+                "intent_label": intent,  # self.intent_label_to_idx[intent],
                 "index": len(self.examples),
-            })
-
+            }
+            for utt, intent in tqdm(reader)
+        )
         self.idx=0
 
     def __len__(self):
@@ -82,14 +85,16 @@ class SlotDataset(Dataset):
         slot_vocab_path = os.path.join(os.path.dirname(data_path), "vocab.txt")
         slot_names = json.load(open(slot_vocab_path))
         slot_names.insert(0, "[PAD]")
-        self.slot_label_to_idx = dict((label, idx) for idx, label in enumerate(slot_names))
+        self.slot_label_to_idx = {label: idx for idx, label in enumerate(slot_names)}
         self.slot_idx_to_label = {idx: label for label, idx in self.slot_label_to_idx.items()}
 
         self.slot_classes = list(self.slot_idx_to_label.values())
         self.slot_classes = [x.replace('_',' ') for x in self.slot_classes]
         # Process data
         # self.tokenizer = tokenizer
-        cached_path = os.path.join(data_dirname, "{}_{}_slots_cached".format(self.split, vocab_file_name))
+        cached_path = os.path.join(
+            data_dirname, f"{self.split}_{vocab_file_name}_slots_cached"
+        )
         texts = []
         slotss = []
         self.examples = []
@@ -145,7 +150,7 @@ class SlotDataset(Dataset):
             for word, word_label in zip(text_sequence.split(), word_labels.split()):
                 encoded_labels.append(slot_map[word_label])
                 expand_label = word_label.replace("B-", "I-")
-                if not expand_label in slot_map:
+                if expand_label not in slot_map:
                     expand_label = word_label
                 word_tokens_len = _get_word_tokens_len(word, tokenizer)
                 encoded_labels.extend([slot_map[expand_label]] * (word_tokens_len - 1))
@@ -181,9 +186,9 @@ class SlotDataset(Dataset):
             if word in word_to_slot:
                 slot = word_to_slot[word]
                 if cur is not None and slot == cur:
-                    slots.append("I-" + slot)
+                    slots.append(f"I-{slot}")
                 else:
-                    slots.append("B-" + slot)
+                    slots.append(f"B-{slot}")
                     cur = slot
             else:
                 slots.append("O")
@@ -206,19 +211,21 @@ class TOPDataset(Dataset):
         slot_vocab_path = os.path.join(data_path, config['slot_vocab'])
         slot_names = [e.strip() for e in open(slot_vocab_path).readlines()]
         slot_names.insert(0, "[PAD]")
-        self.slot_label_to_idx = dict((label, idx) for idx, label in enumerate(slot_names))
+        self.slot_label_to_idx = {label: idx for idx, label in enumerate(slot_names)}
         self.slot_idx_to_label = {idx: label for label, idx in self.slot_label_to_idx.items()}
 
         # Intent categories
         intent_vocab_path = os.path.join(data_path,  config['intent_vocab'])
         intent_names = [e.strip() for e in open(intent_vocab_path).readlines()]
-        self.intent_label_to_idx = dict((label, idx) for idx, label in enumerate(intent_names))
+        self.intent_label_to_idx = {
+            label: idx for idx, label in enumerate(intent_names)
+        }
         self.intent_idx_to_label = {idx: label for label, idx in self.intent_label_to_idx.items()}
 
         # Process data
         self.examples = []
 
-        data_file = os.path.join(data_path,  config['{}_data_path'.format(config['split'])])
+        data_file = os.path.join(data_path, config[f"{config['split']}_data_path"])
         data = [e.strip() for e in open(data_file).readlines()]
         for example in tqdm(data):
             example, intent = example.split(" <=> ")
@@ -251,7 +258,7 @@ class TOPDataset(Dataset):
             for word, word_label in zip(text_sequence.split(), word_labels.split()):
                 encoded_labels.append(slot_map[word_label])
                 expand_label = word_label.replace("B-", "I-")
-                if not expand_label in slot_map:
+                if expand_label not in slot_map:
                     expand_label = word_label
                 word_tokens_len = _get_word_tokens_len(word, tokenizer)
                 encoded_labels.extend([slot_map[expand_label]] * (word_tokens_len - 1))

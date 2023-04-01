@@ -69,7 +69,7 @@ class Generator(GeneratorBasic):
             datapoints = random.sample(datapoints, min(len(datapoints), self.max_data))
 
             definitions = instruction_dict['Definitions']
-            
+
             for dp in datapoints:
                 # classes = dataset_reader.labels
                 classes = ['supports', 'refutes', 'not enough information']
@@ -83,9 +83,10 @@ class Generator(GeneratorBasic):
                 mapped_instruction = get_alphabetwithoptions_string(classes)
                 answer_idx = classes.index(dplabel)
                 output = ascii_uppercase[answer_idx]
-                candidate_options = []
-                for option, candidate in zip(ascii_uppercase, classes):
-                    candidate_options.append(f'{option}')
+                candidate_options = [
+                    f'{option}'
+                    for option, candidate in zip(ascii_uppercase, classes)
+                ]
                 # directly selecting does not work well for this task, option index works better
                 # mapped_instruction = get_options_string(classes)
                 # output = dplabel
@@ -93,26 +94,28 @@ class Generator(GeneratorBasic):
                 response_string, context_string = None, None
                 context_list = []
 
-                context_string = (' '+settings.EOT_SEP+ ' ').join(dp['context'][-settings.MAX_CONTEXT_NUMUTTERANCE:])
+                context_string = f' {settings.EOT_SEP} '.join(
+                    dp['context'][-settings.MAX_CONTEXT_NUMUTTERANCE :]
+                )
                 response_string = dp['response']
                 # context_list = dp['context']
                 evidence_list = dp['evidence_list']
-                evidence_list = ['title: ' + ev[0] + ' text: ' + ev[2] for ev in evidence_list[:5]]
-                doc = (' ' + settings.CLASS_SEPARATOR + ' ').join(evidence_list)
+                evidence_list = [f'title: {ev[0]} text: {ev[2]}' for ev in evidence_list[:5]]
+                doc = f' {settings.CLASS_SEPARATOR} '.join(evidence_list)
                 doc = re.sub("  +", " ", doc)
                 if len(doc.split()) > settings.MAX_DOCUMENT_LENGTH:
                     doc = ' '.join(doc.split())[:settings.MAX_DOCUMENT_LENGTH]
                 context_string = ' '.join(context_string.split()[-settings.MAX_DIALOGUE_LENGTH:])
                 # if dataset_reader.name == ''dnli
-                text = f' {settings.EVIDENCE_SEP} {doc} '+  settings.CONTEXT_SEP+' ' +context_string +' '+settings.RESPONSE_SEP+' ' + response_string +' ' + settings.EOD_SEP + ' '+ mapped_instruction
+                text = f' {settings.EVIDENCE_SEP} {doc} {settings.CONTEXT_SEP} {context_string} {settings.RESPONSE_SEP} {response_string} {settings.EOD_SEP} {mapped_instruction}'
                 post_prompts = [
-                                settings.QUESTION_SEP+'. The predicted class based on the context, response and evidence is',
-                                settings.QUESTION_SEP+'. Choose the most possible class based on the response and the evidence',
-                                settings.QUESTION_SEP+'. The best option given the context and the response is',
-                                settings.QUESTION_SEP+". The best option among the provided classes based on the response and the evidence is"
-                                ]
+                    f'{settings.QUESTION_SEP}. The predicted class based on the context, response and evidence is',
+                    f'{settings.QUESTION_SEP}. Choose the most possible class based on the response and the evidence',
+                    f'{settings.QUESTION_SEP}. The best option given the context and the response is',
+                    f"{settings.QUESTION_SEP}. The best option among the provided classes based on the response and the evidence is",
+                ]
 
-                text = text + ' ' + random.choice(post_prompts)
+                text = f'{text} {random.choice(post_prompts)}'
                 text = re.sub(' +', ' ', text)
                 index = dp.get('index', -1)
                 split = dp.get('split', 'unspecified')

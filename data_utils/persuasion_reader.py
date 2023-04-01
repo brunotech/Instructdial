@@ -26,13 +26,14 @@ class PersuasionDataset(Dataset):
         df = pd.concat([df_1, df_2, df_3, df_4, df_5])
         df.reset_index(inplace=True)
         examples = df.to_dict('index')
-        for index, row in examples.items():
-            self.examples.append({
+        self.examples.extend(
+            {
                 "context": row['history'],
                 "response": row['Unit'],
-                "strategy": [row['er_label_1']]
-            })
-
+                "strategy": [row['er_label_1']],
+            }
+            for index, row in examples.items()
+        )
         self.strategy_classes = df['er_label_1'].unique().tolist()
 
         """

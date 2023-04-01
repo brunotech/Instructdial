@@ -16,36 +16,36 @@ random.seed(123)
 
 instruction_dict = {
     "id": "deal_present",
-    "Source": [
-        "self"
-    ],
+    "Source": ["self"],
     "Definitions": [
         "In this task you will be shown a conversation you have to determine if an agreement was reached ",
         "Read the given conversation and determine if the people in the conversation came to an agreement",
-        "In this task you will be shown a conversation where people are negotiating. Determine if the people in the conversation reached an agreement"],
+        "In this task you will be shown a conversation where people are negotiating. Determine if the people in the conversation reached an agreement",
+    ],
     "Positive Examples": [
         {
-            "text": settings.CONTEXT_SEP + " i\'d like the basketball and the hat , you can keep all 4 books ? " +
-                    settings.EOT_SEP + " deal " + settings.EOD_SEP + " " +
-                    settings.QUESTION_SEP + " Was an agreement reached? Answer choices [OPTIONS] yes||||no ",
+            "text": settings.CONTEXT_SEP
+            + " i\'d like the basketball and the hat , you can keep all 4 books ? "
+            + settings.EOT_SEP
+            + " deal "
+            + settings.EOD_SEP
+            + " "
+            + settings.QUESTION_SEP
+            + " Was an agreement reached? Answer choices [OPTIONS] yes||||no ",
             "output": "Yes",
             "index": 17,
-            "dataset": "deal"
+            "dataset": "deal",
         }
     ],
     "Negative Examples": [
         {
-            "text": settings.CONTEXT_SEP + " you are only wasting your time " +
-                    settings.EOT_SEP + " balls and hat to me , book to you " +
-                    settings.EOT_SEP + " lol good try .  " + settings.EOD_SEP + " " +
-                    settings.QUESTION_SEP + " Is there an agreement in this dialogue? Answer choices [OPTIONS] yes||||no  ",
-
+            "text": f"{settings.CONTEXT_SEP} you are only wasting your time {settings.EOT_SEP} balls and hat to me , book to you {settings.EOT_SEP} lol good try .  {settings.EOD_SEP} {settings.QUESTION_SEP} Is there an agreement in this dialogue? Answer choices [OPTIONS] yes||||no  ",
             "output": "No",
             "index": 1743,
             "split": "train",
-            "dataset": "deal"
+            "dataset": "deal",
         }
-    ]
+    ],
 }
 
 
@@ -55,7 +55,7 @@ def list_tostring(classes):
     if len(classes) < 2:
         return ' '.join(classes)
     elif len(classes) == 2:
-        return classes[0] + ' and ' + classes[1]
+        return f'{classes[0]} and {classes[1]}'
     else:
         return ', '.join(classes[:-1]) + ' and ' + classes[-1]
 
@@ -106,21 +106,23 @@ class Generator(GeneratorBasic):
                 index = dp.get('index', -1)
                 split = dp.get('split', 'unspecified')
 
-                context = (' ' + settings.EOT_SEP + ' ').join(dp['context'][-settings.MAX_CONTEXT_NUMUTTERANCE:])
+                context = f' {settings.EOT_SEP} '.join(
+                    dp['context'][-settings.MAX_CONTEXT_NUMUTTERANCE :]
+                )
                 context_str = ' '.join(context.split()[-settings.MAX_DIALOGUE_LENGTH:])
 
-                if dp['agreement']:
-                    output = 'yes'
-                else:
-                    output = "no"
+                output = 'yes' if dp['agreement'] else "no"
+                post_prompts = [
+                    f"{settings.QUESTION_SEP} Was an agreement reached? ",
+                    f"{settings.QUESTION_SEP} Is there an agreement between the people in this dialogue? ",
+                    f"{settings.QUESTION_SEP} Is the negotiation in dialogue resolved ? ",
+                    f"{settings.QUESTION_SEP} Is an agreement reached between the people negotiating ? ",
+                ]
 
-                post_prompts = [settings.QUESTION_SEP + " Was an agreement reached? ",
-                                settings.QUESTION_SEP + " Is there an agreement between the people in this dialogue? ",
-                                settings.QUESTION_SEP + " Is the negotiation in dialogue resolved ? ",
-                                settings.QUESTION_SEP + " Is an agreement reached between the people negotiating ? "]
-
-                text = settings.CONTEXT_SEP + " " + context_str + " " + settings.EOD_SEP \
-                       + " " + random.choice(post_prompts) + " " + get_options_string(["yes", "no"])
+                text = (
+                    f"{settings.CONTEXT_SEP} {context_str} {settings.EOD_SEP} {random.choice(post_prompts)} "
+                    + get_options_string(["yes", "no"])
+                )
                 text = re.sub(' +', ' ', text)
 
                 sequences.append({'text': text,

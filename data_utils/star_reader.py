@@ -80,7 +80,7 @@ def filter_dataset(dataset,
             examples = [ex for ex in examples if ex["tasks"][0] == task]
 
     # Split based on percentage
-    all_dialog_ids = sorted(list(set([ex['dialog_id'] for ex in examples])))
+    all_dialog_ids = sorted(list({ex['dialog_id'] for ex in examples}))
     if train:
         selected_ids = all_dialog_ids[:int(len(all_dialog_ids)*percentage)]
     else:
@@ -135,7 +135,7 @@ class STARDataset(Dataset):
                             key = list(constraint.keys())[0]
                             val = constraint[key]
 
-                            utt_text += "{} = {} ; ".format(key, val)
+                            utt_text += f"{key} = {val} ; "
 
                     # If it's a knowledge base item, format it as a string
                     if utt['Action'] == 'return_item':
@@ -144,7 +144,7 @@ class STARDataset(Dataset):
                             utt_text += "NO RESULT"
                         else:
                             for key,val in utt['Item'].items():
-                                utt_text += "{} = {} ; ".format(key, val)
+                                utt_text += f"{key} = {val} ; "
 
 
                 # NOTE: Ground truth action labels only exist when wizard picks suggestion. 
@@ -190,9 +190,11 @@ class STARDataset(Dataset):
 
 
                 # Process and concatenate to history
-                if utt['Agent'] in ['User', 'Wizard', 'KnowledgeBase']:
-                    if utt_text != "":
-                        history += "[{}] {} [SEP] ".format(utt['Agent'], utt_text.strip())
+                if (
+                    utt['Agent'] in ['User', 'Wizard', 'KnowledgeBase']
+                    and utt_text != ""
+                ):
+                    history += f"[{utt['Agent']}] {utt_text.strip()} [SEP] "
         if train:
             filter_dataset(self, data_type="multitask", percentage=0.8, train=True)
         else:

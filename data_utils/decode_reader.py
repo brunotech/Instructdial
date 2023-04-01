@@ -25,8 +25,7 @@ LOGGER = logging.getLogger(__name__)
 def get_json_lines(inp_file):
     lines = []
     with jsonlines.open(inp_file) as reader:
-        for obj in reader:
-            lines.append(obj)
+        lines.extend(iter(reader))
     return lines
 
 
@@ -47,30 +46,32 @@ class DECODEDataset(Dataset):
         if split == 'test':
             data = get_json_lines(('./datasets/decode_v0.1/test.jsonl'))
 
-        for i, odp in enumerate(tqdm(data)):
+        for odp in tqdm(data):
             # print(dp)
             # import pdb;pdb.set_trace()
             if len(odp['aggregated_contradiction_indices'])>0:
                 dialogue = [t['text'] for t in odp['turns']]
-                dp = dict()
-                dp['context'] = dialogue[:-1]
-                dp['response'] = dialogue[-1]
-                dp['label'] = 'contradicted'
+                dp = {
+                    'context': dialogue[:-1],
+                    'response': dialogue[-1],
+                    'label': 'contradicted',
+                }
                 self.examples.append(dp)
 
                 num_trials = 0
-                randomindex = random.choice([x for x in range(len(dialogue))])
+                randomindex = random.choice(list(range(len(dialogue))))
                 while randomindex in odp['aggregated_contradiction_indices']:
-                    randomindex = random.choice([x for x in range(1, len(dialogue))])
+                    randomindex = random.choice(list(range(1, len(dialogue))))
                     num_trials += 1
                     if num_trials>10:
                         num_trials = -1
                         break
                 if num_trials!=-1:
-                    dp = dict()
-                    dp['context'] = dialogue[:randomindex]
-                    dp['response'] = dialogue[randomindex]
-                    dp['label'] = 'uncontradicted'
+                    dp = {
+                        'context': dialogue[:randomindex],
+                        'response': dialogue[randomindex],
+                        'label': 'uncontradicted',
+                    }
                     self.examples.append(dp)
 
 

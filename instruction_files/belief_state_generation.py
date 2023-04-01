@@ -13,21 +13,20 @@ import re
 
 instruction_dict = {
     "id": "db-based-generation",
-    "Definitions": ["Read the dialogue and to generate the belief state",
-                    "Generate the belief state given the dialogue",
-                    "Predict the current belief state from the dialogue"],
+    "Definitions": [
+        "Read the dialogue and to generate the belief state",
+        "Generate the belief state given the dialogue",
+        "Predict the current belief state from the dialogue",
+    ],
     "Positive Examples": [
         {
-            "text": settings.CONTEXT_SEP + " there are 21 guesthouses which offer free parking . which area do you prefer to stay in ? " +
-                    settings.EOT_SEP + " i am open to any area , but the hotel should definitely have only 1 star . " +
-                    settings.EOD_SEP + " " +
-                    settings.QUESTION_SEP + " Given this context, the belief is ",
+            "text": f"{settings.CONTEXT_SEP} there are 21 guesthouses which offer free parking . which area do you prefer to stay in ? {settings.EOT_SEP} i am open to any area , but the hotel should definitely have only 1 star . {settings.EOD_SEP} {settings.QUESTION_SEP} Given this context, the belief is ",
             "output": "hotel-parking : yes , hotel-type : guest house",
             "index": 5714,
             "split": "train",
-            "dataset": "multiwoz"
+            "dataset": "multiwoz",
         }
-    ]
+    ],
 }
 
 
@@ -75,21 +74,25 @@ class Generator(GeneratorBasic):
             # mapped_definition = Template(definition).substitute(**mapping)
             max_text_size = -1
             max_context_len = -1
-            for i, dp in enumerate(datapoints):
+            for dp in datapoints:
                 index = dp.get('index', -1)
                 split = dp.get('split', 'unspecified')
 
-                post_prompts = [settings.QUESTION_SEP + " What is the belief state? ",
-                                settings.QUESTION_SEP + " The belief state is ",
-                                settings.QUESTION_SEP + " What is a the belief state for this dialogue? "]
+                post_prompts = [
+                    f"{settings.QUESTION_SEP} What is the belief state? ",
+                    f"{settings.QUESTION_SEP} The belief state is ",
+                    f"{settings.QUESTION_SEP} What is a the belief state for this dialogue? ",
+                ]
 
                 max_context_len = max(max_context_len, len(dp['context']))
-                context = (' ' + settings.EOT_SEP + ' ').join(dp['context'][-self.context_max_length:])
+                context = f' {settings.EOT_SEP} '.join(
+                    dp['context'][-self.context_max_length :]
+                )
                 context_str = ' '.join(context.split()[-settings.MAX_DIALOGUE_LENGTH:])
                 # context = (' ' + settings.EOT_SEP + ' ').join(dp['context'][:])
                 # context_str = ' '.join(context.split()[:])
 
-                text = settings.CONTEXT_SEP + " " + context_str + " " + settings.EOD_SEP + " " + random.choice(post_prompts)
+                text = f"{settings.CONTEXT_SEP} {context_str} {settings.EOD_SEP} {random.choice(post_prompts)}"
                 output = dp['state']
                 text = re.sub(' +', ' ', text)
                 max_text_size = max(len(text.split()),max_text_size)
